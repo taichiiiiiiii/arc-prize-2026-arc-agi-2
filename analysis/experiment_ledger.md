@@ -13,3 +13,6 @@
 - S1 v2 を 2026-10-24 19:11 UTC に提出（ref 57604463、PENDING）。保存時の実行（evaluation 4 タスク）の Reload score は 2.5。
 - NVARC の所要時間は 1 タスクあたり、小さいタスクで 107〜350 秒、大きいタスクで 536〜1216 秒（smoke と S1 のログより）。
 - hybrid_v1 v1 の smoke 結果: NVARC は 3/11 で、エージェントは動かなかった。原因は CPython 3.12 の pip が utility script の PYTHONPATH を引き継ぎ、読み取り専用の場所にある zipp を消そうとして失敗したこと。v2 では環境変数を空にして実行し、vllm の import 確認と /kaggle/working の後片付けを追加した。出力ファイルが大量にあると CLI の output 取得が 429 になるので、ログだけを取る `scripts/fetch_log.py` を作った。
+- hybrid v2 の smoke（evaluation 8 タスク / 11 出力）: Python 3.12 環境の準備に 263 秒、vLLM の起動に 450 秒（TRITON_ATTN + FP8 KV + MTP2 の設定で起動）。NVARC は 5/11、エージェントは verified 2/8 だが test は 0/11 正解、統合後も 5/11。生成速度は同時 1 本で約 34 tok/s、同時 8 本で約 245 tok/s とほぼ比例して伸びる。エージェントの 6/8 は submit を一度もせずに 60k トークンの上限を使い切った（考えすぎ）。
+- v3: NVARC を 7 時間に延ばし、短いタスクから処理（smoke の実測から見て、ほぼ全タスクを処理できる見込み）。エージェントは force_submit_after=5、thinking を 1 ターン 6144 トークンまで、同時 32 本、1 回の試行の上限を 50k トークンに変更。S2 として、smoke の結果が出て、PENDING の提出がなく、その日の UTC の枠が空いていれば自動で提出する（`scripts/watch_submit_hybrid.sh`）。
+- 事前に決めておく判定ルール: S2 の Public が S1 より 0.5 以上低ければ、NVARC を縮めたことが原因とみて、NVARC をフル（11 時間）に戻す。エージェントは、NVARC が処理を終えたあとの残り時間だけで回す。
