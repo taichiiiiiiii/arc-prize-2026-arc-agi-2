@@ -2,7 +2,7 @@
 
 Kaggle: https://www.kaggle.com/competitions/arc-prize-2026-arc-agi-2
 
-コンペ概要とルールの要点は [docs/competition_overview.md](docs/competition_overview.md)、
+作業ルールは [AGENTS.md](AGENTS.md)、コンペ概要とルールの要点は [docs/competition_overview.md](docs/competition_overview.md)、
 実験記録は [analysis/experiment_ledger.md](analysis/experiment_ledger.md)。
 
 ## セットアップ
