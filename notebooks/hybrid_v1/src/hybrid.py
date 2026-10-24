@@ -45,7 +45,8 @@ def one(pattern):
     return Path(hits[0])
 
 
-def write_atomic(obj, path=SUB):
+def write_atomic(obj, path=None):
+    path = path or SUB
     tmp = str(path) + ".tmp"
     with open(tmp, "w") as f:
         json.dump(obj, f)
@@ -105,14 +106,14 @@ def prepare_runtime(cfg, state):
 
 
 # ---------------------------------------------------------------- phase 1: NVARC
-def run_nvarc(cfg, keys, chal_path, end_time):
+def run_nvarc(cfg, keys, chal_path, end_time, gpus="0,1,2,3"):
     kf = WORK / "nvarc_keys.json"
     kf.write_text(json.dumps(keys))
     env = dict(os.environ, UNSLOTH_DISABLE_STATISTICS="1",
                TRITON_PTXAS_PATH="/usr/local/cuda/bin/ptxas", OMP_NUM_THREADS="12",
                PYTHONPATH=str(HERE) + os.pathsep + os.environ.get("PYTHONPATH", ""))
     cmd = [sys.executable, str(HERE / "starter.py"), "--end-time", str(end_time),
-           "--keys", str(kf), "--challenges", str(chal_path)]
+           "--keys", str(kf), "--challenges", str(chal_path), "--gpus", gpus]
     log("NVARC:", " ".join(cmd))
     t = time.time()
     proc = None
@@ -153,12 +154,15 @@ def decode_nvarc(chal_path, sol_path=None, store="/kaggle/inference_outputs"):
 
 
 # ---------------------------------------------------------------- phase 2: vLLM
-def gpus_free(limit_mb=1500, wait_s=180):
+def gpus_free(limit_mb=1500, wait_s=180, which=None):
     t = time.time()
+    out = []
     while time.time() - t < wait_s:
         out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
                              capture_output=True, text=True).stdout.split()
         used = [int(u) for u in out if u.strip().isdigit()]
+        if which is not None:
+            used = [u for i, u in enumerate(used) if i in which]
         if used and all(u < limit_mb for u in used):
             return True
         time.sleep(5)
@@ -166,7 +170,7 @@ def gpus_free(limit_mb=1500, wait_s=180):
     return False
 
 
-def kill_server(proc):
+def kill_server(proc, which=None):
     try:
         os.killpg(proc.pid, signal.SIGKILL)
     except Exception:
@@ -175,7 +179,7 @@ def kill_server(proc):
         proc.wait(timeout=60)
     except Exception:
         pass
-    gpus_free()
+    gpus_free(which=which)
 
 
 def start_server(cfg, py, rung, deadline):
@@ -184,9 +188,12 @@ def start_server(cfg, py, rung, deadline):
                VLLM_NO_USAGE_STATS="1", PYTHONPATH="",
                LIBRARY_PATH="/usr/local/nvidia/lib64:" + os.environ.get("LIBRARY_PATH", ""))
     env.update(rung.get("env", {}))
+    tp = cfg.get("tp", 4)
+    if cfg.get("vllm_gpus"):
+        env["CUDA_VISIBLE_DEVICES"] = cfg["vllm_gpus"]
     cmd = [py, "-m", "vllm.entrypoints.openai.api_server", "--model", str(model),
            "--served-model-name", "qwen", "--host", "127.0.0.1", "--port", "1234",
-           "--tensor-parallel-size", "4", "--enable-auto-tool-choice", *cfg["parsers"],
+           "--tensor-parallel-size", str(tp), "--enable-auto-tool-choice", *cfg["parsers"],
            "--generation-config", "vllm", "--enable-prefix-caching",
            "--max-model-len", str(cfg["max_model_len"]), "--gpu-memory-utilization", "0.90",
            "--max-num-seqs", str(cfg["max_num_seqs"]), *rung.get("args", [])]
@@ -206,8 +213,12 @@ def start_server(cfg, py, rung, deadline):
         except Exception:
             time.sleep(10)
     log("server FAILED; tail:\n" + "\n".join(LOG.read_text(errors="replace").splitlines()[-40:]))
-    kill_server(proc)
+    kill_server(proc, which=vllm_gpu_ids(cfg))
     return None
+
+
+def vllm_gpu_ids(cfg):
+    return {int(g) for g in cfg["vllm_gpus"].split(",")} if cfg.get("vllm_gpus") else None
 
 
 # ---------------------------------------------------------------- phase 3/4: agent + merge
@@ -294,74 +305,95 @@ def score(sub, sols):
     return ok, tot
 
 
+def start_server_ladder(cfg, state, agent_end):
+    for i, rung in enumerate(cfg["server_ladder"]):
+        if agent_end - time.time() < 45 * 60:
+            break
+        proc = start_server(cfg, state["py"], rung, agent_end - 30 * 60)
+        if proc is not None:
+            log(f"server up with rung {i}")
+            return proc
+    raise RuntimeError("no server")
+
+
 def main(cfg):
     start = float((WORK / "start_epoch.txt").read_text())
     rerun = os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "").strip().lower() in {"1", "true"}
+    split = cfg.get("mode") == "split"          # NVARC on GPUs 0,1 || vLLM TP2 on GPUs 2,3
     hard_end = start + 12 * 3600 - cfg.get("reserve_s", 30 * 60)
     chal_path = challenges_path(rerun)
     ch = json.load(open(chal_path))
     if rerun:
         keys = sorted(ch)
-        nvarc_end = min(start + cfg["nvarc_hours"] * 3600, hard_end - 3 * 3600)
+        if split:
+            nvarc_end = hard_end - 25 * 60
+        else:
+            nvarc_end = min(start + cfg["nvarc_hours"] * 3600, hard_end - 3 * 3600)
         agent_end = hard_end
     else:
         keys = cfg["smoke_tasks"]
         nvarc_end = time.time() + cfg["smoke_nvarc_min"] * 60
-        agent_end = nvarc_end + cfg["smoke_agent_min"] * 60 + 25 * 60
+        agent_end = (nvarc_end if not split else time.time()) + cfg["smoke_agent_min"] * 60 + 25 * 60
     tasks = {k: ch[k] for k in keys}
-    log(f"rerun={rerun} tasks={len(tasks)} nvarc_end in {(nvarc_end - time.time()) / 60:.0f} min, "
-        f"agent_end in {(agent_end - time.time()) / 60:.0f} min")
+    by_len = sorted(keys, key=lambda t: len(json.dumps(tasks[t])))
+    log(f"rerun={rerun} split={split} tasks={len(tasks)} nvarc_end in "
+        f"{(nvarc_end - time.time()) / 60:.0f} min, agent_end in {(agent_end - time.time()) / 60:.0f} min")
 
     state = {}
     rt = threading.Thread(target=prepare_runtime, args=(cfg, state), daemon=True)
     rt.start()
+    empty = {t: [{"attempt_1": [[0]], "attempt_2": [[0]]} for _ in tasks[t]["test"]] for t in keys}
+    nv = {"sub": empty, "meta": {}}
 
-    # phase 1
-    nv_sub = {t: [{"attempt_1": [[0]], "attempt_2": [[0]]} for _ in tasks[t]["test"]] for t in keys}
-    meta = {}
-    try:
-        run_nvarc(cfg, keys, chal_path, nvarc_end)
-        full_sub, meta = decode_nvarc(chal_path)
-        nv_sub = {t: full_sub[t] for t in keys}
-        (WORK / "nvarc_meta.json").write_text(json.dumps(meta))
-    except BaseException:
-        log("NVARC phase failed:\n" + traceback.format_exc())
-    sub = json.load(open(SUB))
-    for t in keys:
-        sub[t] = merge_task(tasks[t], nv_sub[t], None)
-    write_atomic(sub)
-    write_atomic(nv_sub, WORK / "nvarc_submission.json")
-    log(f"NVARC submission written; decoded {len(meta)} test outputs")
+    def nvarc_phase():
+        try:
+            run_nvarc(cfg, by_len, chal_path, nvarc_end, gpus=cfg.get("nvarc_gpus", "0,1,2,3"))
+            full_sub, meta = decode_nvarc(chal_path)
+            nv["sub"], nv["meta"] = {t: full_sub[t] for t in keys}, meta
+            (WORK / "nvarc_meta.json").write_text(json.dumps(meta))
+        except BaseException:
+            log("NVARC phase failed:\n" + traceback.format_exc())
+        write_atomic(nv["sub"], WORK / "nvarc_submission.json")
+        log(f"NVARC decoded {len(nv['meta'])} test outputs")
 
-    # phase 2/3
+    def merge_all(results):
+        sub = json.load(open(SUB))
+        for t in keys:
+            sub[t] = merge_task(tasks[t], nv["sub"][t],
+                                agent_ranked(results[t], tasks[t]) if results.get(t) else None)
+        write_atomic(sub)
+
     results = {}
     proc = None
+    nv_thread = None
+    if split:
+        nv_thread = threading.Thread(target=nvarc_phase, daemon=True)
+        nv_thread.start()
+    else:
+        nvarc_phase()
+        merge_all(results)
     try:
         rt.join(timeout=max(0, agent_end - time.time() - 45 * 60))
         if "py" not in state:
             raise RuntimeError("runtime not ready: " + state.get("error", "timeout")[-500:])
-        gpus_free()
-        for i, rung in enumerate(cfg["server_ladder"]):
-            if agent_end - time.time() < 45 * 60:
-                break
-            proc = start_server(cfg, state["py"], rung, agent_end - 30 * 60)
-            if proc is not None:
-                log(f"server up with rung {i}")
-                break
-        if proc is None:
-            raise RuntimeError("no server")
+        if not split:
+            gpus_free()
+        proc = start_server_ladder(cfg, state, agent_end)
 
         def conf(t):
-            c = [meta.get(f"{t}_{j}", {}).get("conf", 0.0) for j in range(len(tasks[t]["test"]))]
+            c = [nv["meta"].get(f"{t}_{j}", {}).get("conf", 0.0) for j in range(len(tasks[t]["test"]))]
             return min(c) if c else 0.0
         hi = cfg.get("confident_nvarc", 0.75)
-        order = sorted(keys, key=lambda t: (conf(t) >= hi, len(json.dumps(tasks[t]))))
-        run_agent(cfg, tasks, order, nv_sub, agent_end - 5 * 60, results)
+        order = by_len if split else sorted(keys, key=lambda t: (conf(t) >= hi, len(json.dumps(tasks[t]))))
+        run_agent(cfg, tasks, order, nv["sub"], agent_end - 5 * 60, results)
     except BaseException:
         log("agent phase failed:\n" + traceback.format_exc())
     finally:
         if proc is not None:
-            kill_server(proc)
+            kill_server(proc, which=vllm_gpu_ids(cfg))
+    if nv_thread is not None:
+        nv_thread.join(timeout=max(0, hard_end - time.time()))
+    merge_all(results)
 
     ver = sum(1 for t in results if any(r["status"] == "verified" for r in results[t]))
     log(f"agent verified {ver}/{len(keys)} tasks")
@@ -369,9 +401,9 @@ def main(cfg):
         sols = json.load(open(one("/kaggle/input/**/arc-agi_evaluation_solutions.json")))
         sols = {k: sols[k] for k in keys}
         final = json.load(open(SUB))
-        agent_only = {t: merge_task(tasks[t], [{"attempt_1": [[0]], "attempt_2": [[0]]}] * len(tasks[t]["test"]),
-                                    agent_ranked(results.get(t, []), tasks[t])) for t in keys}
-        for name, s in (("nvarc", nv_sub), ("agent", agent_only), ("merged", final)):
+        agent_only = {t: merge_task(tasks[t], empty[t], agent_ranked(results.get(t, []), tasks[t]))
+                      for t in keys}
+        for name, s in (("nvarc", nv["sub"]), ("agent", agent_only), ("merged", final)):
             log(f"SMOKE score {name}: {score(s, sols)}")
 
 
