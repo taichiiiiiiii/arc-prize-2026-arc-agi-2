@@ -1,0 +1,28 @@
+# Competition data (Kaggle rules forbid redistribution)
+data/
+outputs/
+work/
+*.zip
+submission.json
+
+# Credentials
+kaggle.json
+.kaggle/
+.env
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# Model weights / large artifacts
+*.safetensors
+*.bin
+*.pt
+*.gguf
+kaggle_datasets/
+kaggle_models/
+.DS_Store
