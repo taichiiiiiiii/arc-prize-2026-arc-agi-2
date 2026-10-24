@@ -18,6 +18,10 @@ REASON = ["--reasoning-config", json.dumps({"reasoning_start_str": "<think>",
 MTP2 = ["--speculative-config", json.dumps({"method": "qwen3_5_mtp", "num_speculative_tokens": 2})]
 CONFIG = {
     "py312_glob": "/kaggle/input/**/cpython-3.12*-x86_64-linux-install_only.tar.gz",
+    # public mirror of the upstream python-build-standalone archive, split in 7 parts;
+    # sha256 = upstream release 20260814 asset digest (verified)
+    "py312_parts_glob": "/kaggle/input/**/arc3-cpython312-runtime/**/cpython-3.12.14-part-0*.bin",
+    "py312_sha256": "3297691ae34f75fed81ac424e040145fccb0bafe8e581cd5cadbddfa1c0766c0",
     "model_glob": "/kaggle/input/**/qwen3-8-27b-fp8-repacked-v1/**/config.json",
     "overlay": "/kaggle/input/**/taaf-duck-qwen38-serving-v1/serving_wheels/*.whl",
     "parsers": ["--tool-call-parser", "qwen3_coder", "--reasoning-parser", "qwen3"],
@@ -131,7 +135,7 @@ def build(out: Path, kernel_id: str):
         "enable_internet": False, "keywords": ["gpu"],
         "dataset_sources": ["mirzamilanfarabi/arc3-vllm-h100-wheelhouse-v3",
                             "keithtyser/taaf-duck-qwen38-serving-v1",
-                            "taichiiiii/cpython312-standalone"],
+                            "destinyfire1/arc3-cpython312-runtime"],
         "kernel_sources": ["sorokin/pip-install-unsloth-flash-patch"],
         "competition_sources": ["arc-prize-2026-arc-agi-2"],
         "model_sources": ["sorokin/qwen3_4b_grids15_sft139/Transformers/bfloat16/1",
