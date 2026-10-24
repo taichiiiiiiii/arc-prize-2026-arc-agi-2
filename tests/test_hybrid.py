@@ -81,6 +81,47 @@ def test_repl_agent_end_to_end_with_fake_client():
     json.dumps(got)  # records must be serialisable for the attempts log
 
 
+def _fake_main_env(tmp_path, monkeypatch, split):
+    work = tmp_path / "w"
+    work.mkdir()
+    ch = {"t1": TASK, "t2": TASK}
+    (tmp_path / "ch.json").write_text(json.dumps(ch))
+    (work / "start_epoch.txt").write_text("0")
+    (work / "submission.json").write_text(
+        json.dumps({t: [{"attempt_1": [[0]], "attempt_2": [[0]]}] for t in ch}))
+    monkeypatch.setattr(hybrid, "WORK", work)
+    monkeypatch.setattr(hybrid, "SUB", work / "submission.json")
+    monkeypatch.setenv("KAGGLE_IS_COMPETITION_RERUN", "1")
+    monkeypatch.setattr(hybrid, "challenges_path", lambda rerun: tmp_path / "ch.json")
+    monkeypatch.setattr(hybrid.time, "time", lambda: 1000.0)
+    monkeypatch.setattr(hybrid, "prepare_runtime", lambda cfg, st: st.update(py="py"))
+    monkeypatch.setattr(hybrid, "run_nvarc", lambda *a, **k: None)
+    monkeypatch.setattr(hybrid, "decode_nvarc", lambda p: (
+        {"t1": [{"attempt_1": [[1]], "attempt_2": [[2]]}], "t2": [{"attempt_1": [[3]], "attempt_2": [[4]]}]},
+        {"t1_0": {"conf": 0.9}, "t2_0": {"conf": 0.1}}))
+    monkeypatch.setattr(hybrid, "start_server_ladder", lambda *a: object())
+    monkeypatch.setattr(hybrid, "kill_server", lambda *a, **k: None)
+    monkeypatch.setattr(hybrid, "gpus_free", lambda *a, **k: True)
+    seen = {}
+
+    def fake_agent(cfg, tasks, order, nv_sub, deadline, results):
+        seen["order"] = order
+        results["t2"] = [{"status": "verified", "programs": [{"n_ok": 2, "n_train": 2, "test": [[[5, 4]]]}]}]
+    monkeypatch.setattr(hybrid, "run_agent", fake_agent)
+    cfg = {"mode": "split" if split else "sequential", "nvarc_hours": 5, "smoke_tasks": []}
+    hybrid.main(cfg)
+    return json.load(open(work / "submission.json")), seen
+
+
+@pytest.mark.parametrize("split", [False, True])
+def test_main_merges_nvarc_and_agent(tmp_path, monkeypatch, split):
+    sub, seen = _fake_main_env(tmp_path, monkeypatch, split)
+    assert sub["t1"] == [{"attempt_1": [[1]], "attempt_2": [[2]]}]
+    assert sub["t2"] == [{"attempt_1": [[5, 4]], "attempt_2": [[3]]}]
+    if not split:
+        assert seen["order"] == ["t2", "t1"]       # uncertain NVARC task first
+
+
 def test_decode_nvarc_on_synthetic_outputs(tmp_path, monkeypatch):
     """NVARC pickles -> ranked submission + confidence, with transformers stubbed out."""
     import bz2
