@@ -62,10 +62,29 @@ def challenges_path(rerun):
 def prepare_runtime(cfg, state):
     try:
         t = time.time()
-        tgz = one(cfg["py312_glob"])
-        with tarfile.open(tgz) as tf:
-            tf.extractall(WORK / "py312_tmp")
-        shutil.move(str(WORK / "py312_tmp" / "python"), str(PY312))
+        hits = sorted(glob.glob(cfg["py312_glob"], recursive=True))
+        parts = sorted(glob.glob(cfg.get("py312_parts_glob", "/nonexistent"), recursive=True))
+        if not hits and parts:                 # split upstream archive: concat + sha256 check
+            import hashlib
+            tgz = WORK / "cpython312.tar.gz"
+            h = hashlib.sha256()
+            with open(tgz, "wb") as out:
+                for p in parts:
+                    data = Path(p).read_bytes()
+                    h.update(data)
+                    out.write(data)
+            if h.hexdigest() != cfg["py312_sha256"]:
+                raise RuntimeError(f"cpython archive sha256 mismatch: {h.hexdigest()}")
+            hits = [str(tgz)]
+        if hits:
+            with tarfile.open(hits[0]) as tf:
+                tf.extractall(WORK / "py312_tmp")
+            shutil.move(str(WORK / "py312_tmp" / "python"), str(PY312))
+        else:                                  # Kaggle may have unpacked the archive
+            exe = one("/kaggle/input/**/python/bin/python3.12")
+            shutil.copytree(exe.parent.parent, PY312, symlinks=True)
+            for p in (PY312 / "bin").iterdir():
+                p.chmod(0o755)
         py = PY312 / "bin" / "python3"
         wh = one("/kaggle/input/**/arc3-vllm-h100-wheelhouse-v3/**/requirements.lock").parent
         subprocess.run([str(py), "-m", "pip", "install", "--no-index", "--find-links", str(wh),
