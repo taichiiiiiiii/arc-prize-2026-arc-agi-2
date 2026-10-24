@@ -3,7 +3,7 @@
 set -u
 K=taichiiiii/arc2-frontier-copy-3389
 C=arc-prize-2026-arc-agi-2
-MSG="frontier copy koushikrudra/failed-in-aimo V1 (33.89) unchanged, v1"
+MSG="frontier copy koushikrudra/failed-in-aimo V1 (33.89) + model mount path fix, v2"
 OUT=/Users/taichi/.hermes/profiles/arc2/cache/scratch/fc_out
 for i in $(seq 1 120); do
   s=$(kaggle kernels status $K 2>&1 | grep -v Warning)
@@ -24,11 +24,14 @@ if os.path.exists(log):
     txt=''.join(e.get('data','') for e in json.load(open(log)))
     for line in txt.splitlines():
         if 'Reload score' in line or 'LegC' in line or 'Traceback' in line: print('LOG:',line[:200])
+    if 'Reload score' not in txt:
+        print('NO_RELOAD_SCORE'); sys.exit(5)
 s=json.load(open(os.path.join(o,'submission.json'))); print('sub tasks',len(s))
 EOF
+[ $? -eq 0 ] || { echo LOG_CHECK_FAILED; exit 5; }
 [ -f $OUT/submission.json ] || { echo NO_SUBMISSION_FILE; exit 4; }
 if kaggle competitions submissions $C --page-size 20 --csv 2>/dev/null | grep -qF "$MSG"; then echo ALREADY_SUBMITTED; else
-  kaggle competitions submit $C -k $K -v 1 -f submission.json -m "$MSG" 2>&1 | grep -v Warning
+  kaggle competitions submit $C -k $K -v 2 -f submission.json -m "$MSG" 2>&1 | grep -v Warning
 fi
 for i in $(seq 1 200); do
   r=$(kaggle competitions submissions $C --page-size 20 --csv 2>&1 | grep -v Warning)

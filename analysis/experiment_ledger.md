@@ -8,3 +8,5 @@
 ## 2026-10-25 調査と方針
 - 詳細は [reports/research_2026-10-25.md](reports/research_2026-10-25.md)。公開ノートブックの最高は 33.89（NVARC 4B TTT）。上位は Qwen3.8-27B の REPL エージェントが主流と推測。本線は NVARC と Qwen3.8-27B エージェントの組み合わせで、Public 45 以上を目標にする。
 - S1: `taichiiiii/arc2-frontier-copy-3389` の v1 を push した（ユーザー承認済み）。中身は `koushikrudra/failed-in-aimo` の V1 で、ipynb は cmp で一致することを確認済み。is_private=True。完了後に自動で提出し、スコアを監視する（`scripts/watch_frontier_copy.sh`）。期待値は 33.89 付近（銀ラインの近く）。
+- S1 v1 は保存時の実行で失敗した。原因は Kaggle Models のマウント先が `/kaggle/input/models/sorokin/...` に変わっていたことで、NVARC がモデルを見つけられなかった。**今の公開フォークも、パスを直さないと同じ理由で落ちる可能性がある。** v2 ではモデルのパスを 1 行だけ直して push した（diff は 1 行）。完了したら自動で提出する。
+- hybrid_v1 の実装は `notebooks/hybrid_v1/` にある。NVARC を 5 時間回したあと、Qwen3.8-27B FP8 の REPL エージェントを vLLM で動かす（vLLM は同梱の CPython 3.12 で起動）。統合ルール: エージェントが検証済みの答えを最優先にし、次に NVARC の上位、最後にエージェントの未検証答えを使う。テスト 13 件が通過（統合ロジック、偽 LLM でのエージェントループ、NVARC デコード）。Kaggle Dataset の作成と、動作確認のための push はユーザー承認待ち。
