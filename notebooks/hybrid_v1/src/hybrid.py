@@ -60,6 +60,15 @@ def challenges_path(rerun):
 
 
 # ---------------------------------------------------------------- phase 0: runtime
+def py312_env():
+    """Environment for the bundled CPython 3.12: none of the notebook's Python paths (the
+    unsloth utility script on PYTHONPATH made pip try to uninstall packages there)."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("PYTHON", "PIP_", "VIRTUAL_ENV", "CONDA"))}
+    env["PYTHONNOUSERSITE"] = "1"
+    return env
+
+
 def prepare_runtime(cfg, state):
     try:
         t = time.time()
@@ -91,13 +100,16 @@ def prepare_runtime(cfg, state):
         subprocess.run([str(py), "-m", "pip", "install", "--no-index", "--find-links", str(wh),
                         "--requirement", str(wh / "requirements.lock"), "--only-binary", ":all:",
                         "--no-compile", "--disable-pip-version-check", "--no-warn-conflicts", "-q"],
-                       check=True)
+                       check=True, env=py312_env())
         if cfg.get("overlay"):
             wheels = sorted(glob.glob(cfg["overlay"], recursive=True))
             if wheels:
                 subprocess.run([str(py), "-m", "pip", "install", "--no-index", "--no-deps",
                                 "--upgrade", "--force-reinstall", "--no-compile",
-                                "--disable-pip-version-check", "-q", *wheels], check=True)
+                                "--disable-pip-version-check", "-q", *wheels], check=True, env=py312_env())
+        subprocess.run([str(py), "-c", "import vllm, torch; print('vllm', vllm.__version__, 'torch', "
+                        "torch.__version__, 'cuda', torch.cuda.is_available())"],
+                       check=True, env=py312_env())
         state["py"] = str(py)
         log(f"runtime ready in {time.time() - t:.0f}s: {py}")
     except BaseException:
@@ -184,8 +196,8 @@ def kill_server(proc, which=None):
 
 def start_server(cfg, py, rung, deadline):
     model = one(cfg["model_glob"]).parent
-    env = dict(os.environ, USE_TF="0", TRANSFORMERS_NO_TF="1", TRANSFORMERS_NO_TORCHVISION="1",
-               VLLM_NO_USAGE_STATS="1", PYTHONPATH="",
+    env = dict(py312_env(), USE_TF="0", TRANSFORMERS_NO_TF="1", TRANSFORMERS_NO_TORCHVISION="1",
+               VLLM_NO_USAGE_STATS="1",
                LIBRARY_PATH="/usr/local/nvidia/lib64:" + os.environ.get("LIBRARY_PATH", ""))
     env.update(rung.get("env", {}))
     tp = cfg.get("tp", 4)
@@ -394,6 +406,9 @@ def main(cfg):
     if nv_thread is not None:
         nv_thread.join(timeout=max(0, hard_end - time.time()))
     merge_all(results)
+    # keep /kaggle/working small: thousands of runtime files make the output listing API 429
+    for p in (PY312, WORK / "py312_tmp", WORK / "cpython312.tar.gz"):
+        shutil.rmtree(p, ignore_errors=True) if p.is_dir() else p.unlink(missing_ok=True)
 
     ver = sum(1 for t in results if any(r["status"] == "verified" for r in results[t]))
     log(f"agent verified {ver}/{len(keys)} tasks")
