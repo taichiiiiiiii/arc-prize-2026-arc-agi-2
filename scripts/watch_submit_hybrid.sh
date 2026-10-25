@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Submit a hybrid kernel version once: its save run completed with the smoke markers, no
-# submission of ours is still pending, and today's (UTC) slot is unused. Then watch the score.
+# Submit a hybrid kernel version once: its save run completed with the smoke markers and
+# today's (UTC) slot is unused. Then watch the score.
 #   watch_submit_hybrid.sh <kernel-ref> <version> "<message>"
 set -u
 K=$1; V=$2; MSG=$3
@@ -28,7 +28,8 @@ for i in $(seq 1 300); do
   pending=$(echo "$r" | grep -c PENDING)
   used=$(echo "$r" | grep -c ",$today ")
   echo "$(date -u '+%m-%d %H:%M') pending=$pending today=$used"
-  if [ "$pending" -eq 0 ] && [ "$used" -eq 0 ]; then
+  # pending submissions do not block a new one (observed 10/25); only the UTC daily slot matters
+  if [ "$used" -eq 0 ]; then
     kaggle competitions submit $C -k $K -v $V -f submission.json -m "$MSG" 2>&1 | grep -v Warning
     break
   fi
