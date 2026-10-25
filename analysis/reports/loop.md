@@ -11,7 +11,7 @@
    c. 何もなければ、現在の最良構成の別シード（sampling seed）。最終枠の分散を減らすためで、Public の点数を探すためではない。
 4. **build → push → smoke**: `uv run python notebooks/hybrid_v1/build.py --out <scratch> --id taichiiiii/arc2-hybrid-v1`、続けて `kaggle kernels push -p <scratch>`。push する前に `uv run ruff check .` と `uv run pytest -q` を通し、kernel-metadata の `is_private: true` を確認する。設定値は build.py の CONFIG を 1 か所だけ変える。
 5. **自動提出の監視を張る**: `scripts/watch_submit_hybrid.sh taichiiiii/arc2-hybrid-v1 <version> "<message>"` を、terminal の background と persist_on_release で起動する。このスクリプトは、smoke の目印（"server ready" と "SMOKE score merged"）がログにあり、その日の UTC の枠が空いているときだけ提出する。同じ version 用の監視スクリプトがすでに動いていれば、新しく起動しない。
-6. **ledger に追記して commit・push する**: 作業ブランチ `feat/research-frontier-copy` に、何を変えたか、なぜか、smoke の結果を書く。
+6. **ledger に追記して commit・push する**: 作業ブランチ `feat/research-frontier-copy` に、何を変えたか、なぜか、smoke の結果を書く。新しい落とし穴や手順が分かったら、スキル `arc-agi-2-repo` に追記する（skill_manage patch）。他のコンペでも使える教訓は `kaggle-competition-ops` に書く。
 7. **報告**: 日本語で 5 行以内。新しいスコア、判定、次に出す候補、提出予定時刻。
 
 ## 制約
