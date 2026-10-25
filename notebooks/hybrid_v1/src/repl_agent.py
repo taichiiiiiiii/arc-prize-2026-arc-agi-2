@@ -227,7 +227,7 @@ def run_attempt(att, task, client, shared, deadline, max_turns=40, max_gen_token
                 nudge_every=NUDGE_EVERY, turn_max_tokens=None, in_python=False,
                 force_submit_after=0, effort_ladder=None, retain_functions=False,
                 keep_reasoning=False, reasoning_key="reasoning_content", keep_recent=6,
-                trim_drain=0, degenerate_guard=False, timeout_as_cut=False):
+                trim_drain=0, degenerate_guard=False, timeout_as_cut=False, force_submit_turns=0):
     """One attempt at one task. The options after force_submit_after are the ARC-AGI-3
     (dfranzen / duck harness) takeaways, each off by default so the baseline is unchanged:
 
@@ -278,8 +278,12 @@ def run_attempt(att, task, client, shared, deadline, max_turns=40, max_gen_token
         req_timeout = max(60.0, min(3600.0, deadline - time.time() + 60.0))
         # mini2arm: the text nudge was read and ignored. The forcesubmit treatment
         # makes the NEXT call a submit after this many python calls without one.
-        force = (force_submit_after
-                 and att.python_calls - att.python_at_submit >= force_submit_after)
+        # hybrid: also force a submit after this many TURNS without one (smoke v2/v3: most
+        # failures thought for 7-12 turns, 2-4 python calls, and never submitted).
+        force = ((force_submit_after
+                  and att.python_calls - att.python_at_submit >= force_submit_after)
+                 or (force_submit_turns
+                     and att.turns - getattr(att, "turns_at_submit", 0) > force_submit_turns))
         if force:
             att.forced += 1
         extra = {}
@@ -371,6 +375,7 @@ def run_attempt(att, task, client, shared, deadline, max_turns=40, max_gen_token
             elif c["name"] == "submit":
                 att.submits += 1
                 att.python_at_submit = att.python_calls
+                att.turns_at_submit = att.turns
                 full, added = with_kept(code, store) if store else (code, [])
                 n_ok, test_out, out = verify(full, task)
                 if added:
@@ -408,7 +413,7 @@ def run_attempt(att, task, client, shared, deadline, max_turns=40, max_gen_token
 # (probe arms can set any run_attempt keyword).
 AGENT_OPTS = ("turn_max_tokens", "in_python", "force_submit_after", "effort_ladder",
               "retain_functions", "keep_reasoning", "reasoning_key", "keep_recent", "trim_drain",
-              "degenerate_guard", "timeout_as_cut", "snippet_timeout")
+              "degenerate_guard", "timeout_as_cut", "snippet_timeout", "force_submit_turns")
 
 
 def attempt_record(a, task):
