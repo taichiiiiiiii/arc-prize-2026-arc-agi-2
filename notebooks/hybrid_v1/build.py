@@ -50,6 +50,7 @@ CONFIG = {
     "turn_max_tokens": 8192,
     "thinking_token_budget": 6144,
     "force_submit_after": 5,
+    "force_submit_turns": 4,
     "in_python": True,
     "effort_ladder": ["low"],
     "timeout_as_cut": True,
