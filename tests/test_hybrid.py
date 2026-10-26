@@ -177,3 +177,47 @@ def test_decode_nvarc_on_synthetic_outputs(tmp_path, monkeypatch):
     assert sub["t1"][0]["attempt_2"] == [[1, 1]]
     assert sub["t2"][0] == {"attempt_1": [[0]], "attempt_2": [[0]]}   # never decoded
     assert meta["t1_0"]["n"] == 3 and abs(meta["t1_0"]["conf"] - 2 / 3) < 1e-9
+
+
+def test_eval_report_counts_false_verified():
+    tasks = {"a": TASK, "b": TASK, "c": TASK}
+    sols = {"a": [[[5, 4]]], "b": [[[5, 4]]], "c": [[[5, 4]]]}
+    sub = {"a": [{"attempt_1": [[5, 4]], "attempt_2": [[0]]}],
+           "b": [{"attempt_1": [[1]], "attempt_2": [[0]]}],
+           "c": [{"attempt_1": [[0]], "attempt_2": [[0]]}]}
+    results = {"a": [{"status": "verified", "gen_tokens": 10}],
+               "b": [{"status": "verified", "gen_tokens": 5}],
+               "c": [{"status": "failed", "gen_tokens": 7}]}
+    s = hybrid.eval_report(tasks, results, sub, sols)["summary"]
+    assert (s["attempted"], s["verified"], s["correct"], s["false_verified"]) == (3, 2, 1, 1)
+    assert s["outputs"] == (1, 3)
+
+
+def test_agent_eval_mode_skips_nvarc(tmp_path, monkeypatch):
+    called = {}
+    monkeypatch.setattr(hybrid, "run_nvarc", lambda *a, **k: called.setdefault("nvarc", 1))
+    work = tmp_path / "w"
+    work.mkdir()
+    ch = {"t1": TASK, "t2": TASK}
+    (tmp_path / "ch.json").write_text(json.dumps(ch))
+    (tmp_path / "sol.json").write_text(json.dumps({"t1": [[[5, 4]]], "t2": [[[5, 4]]]}))
+    (work / "start_epoch.txt").write_text("0")
+    (work / "submission.json").write_text(json.dumps({}))
+    monkeypatch.setattr(hybrid, "WORK", work)
+    monkeypatch.setattr(hybrid, "SUB", work / "submission.json")
+    monkeypatch.delenv("KAGGLE_IS_COMPETITION_RERUN", raising=False)
+    monkeypatch.setattr(hybrid, "challenges_path", lambda rerun: tmp_path / "ch.json")
+    monkeypatch.setattr(hybrid, "one", lambda pat: tmp_path / "sol.json")
+    monkeypatch.setattr(hybrid, "prepare_runtime", lambda cfg, st: st.update(py="py"))
+    monkeypatch.setattr(hybrid, "start_server_ladder", lambda *a: object())
+    monkeypatch.setattr(hybrid, "kill_server", lambda *a, **k: None)
+    monkeypatch.setattr(hybrid, "gpus_free", lambda *a, **k: True)
+
+    def fake_agent(cfg, tasks, order, nv_sub, deadline, results):
+        results["t1"] = [{"status": "verified", "gen_tokens": 3,
+                          "programs": [{"n_ok": 2, "n_train": 2, "test": [[[5, 4]]]}]}]
+    monkeypatch.setattr(hybrid, "run_agent", fake_agent)
+    hybrid.main({"mode": "sequential", "nvarc_hours": 5, "smoke_tasks": [], "agent_eval_h": 1.0})
+    rep = json.loads((work / "agent_eval.json").read_text())["summary"]
+    assert "nvarc" not in called
+    assert rep["correct"] == 1 and rep["tasks"] == 2

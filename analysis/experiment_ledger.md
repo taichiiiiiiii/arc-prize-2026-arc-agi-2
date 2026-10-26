@@ -59,3 +59,14 @@
 ## 2026-10-26 13:35 UTC ループ（v6 提出）
 - **S3: hybrid v6（kernel version 6）を 2026-10-26 13:07 UTC に自動提出**（ref 57667359、PENDING）。smoke: NVARC 3/11、agent 1/11、merged 4/11、vLLM 起動 440 s（v3 と同水準で、退行なし）。10/26（UTC）の枠はこれで使用済み。
 - 判定は事前登録どおり、v6 ≥ 26.4 → 10/27 は `attempts: 2`、v6 < 26.4 → 10/27 は `skip_agent: true`。採点は 16〜21 時間後の見込みなので、10/27 の枠に間に合う。今日はもう push しない（GPU クォータの節約、1 日 1 push）。
+
+## 2026-10-26 16:00 UTC ループを 2 本立てに変更（ユーザー指示: 評価しながら自律的に進める）
+- v6 を 13:07 UTC に提出した（ref 57667359、PENDING）。
+- **エージェント評価カーネル** `taichiiiii/arc2-agent-eval` を追加した。hybrid と同じコードを `agent_eval_h` モードで動かす。NVARC は動かさず、vLLM と Qwen3.8-27B のエージェントだけを evaluation 120 タスクに 2h 回し、`EVAL {attempted, verified, correct, false_verified, outputs}` を出力する。v1 = baseline（v6 のエージェント設定）を 16:00 UTC に push した。
+- **採用ルール（事前登録）**: baseline に比べて correct が +5 タスク以上、かつ false_verified が増えていなければ採用。手順と候補は `analysis/reports/loop.md`。
+- 評価データの汚染の疑いがあるので、絶対値は使わず、baseline との差分だけを見る。
+
+### エージェント評価
+| version | 変更 | attempted | verified | correct | false_verified | outputs | 判定 |
+|---|---|---|---|---|---|---|---|
+| v1 | baseline（v6 の設定） | | | | | | |

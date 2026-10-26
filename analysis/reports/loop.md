@@ -1,28 +1,37 @@
 # 改善ループの手順書（cron から毎回これを読んで 1 周する）
 
-目的: 締め切り 2026-11-02 23:59 UTC までに Private で最も高いスコアを出すこと。提出は 1 日 1 本で、毎日の枠を使い切る。Public への過学習は防ぐ（ledger の「過学習を防ぐルール」に従う）。
+目的: 締め切り 2026-11-02 23:59 UTC までに Private で最も高いスコアを出すこと。Public への過学習は防ぐ（ledger の「過学習を防ぐルール」に従う）。
+ループは 2 本立て: **(A) エージェント評価ループ**（evaluation 120 タスクでエージェントの変更を 1 つずつ測る）と、**(B) 提出ループ**（評価を通った構成だけを本番に入れ、1 日 1 本提出する）。
 
 ## 毎周の手順
-1. **状態を読む**: `analysis/experiment_ledger.md` の末尾、`kaggle competitions submissions arc-prize-2026-arc-agi-2 --page-size 20`、`date -u`、`ps aux | grep -E 'watch_submit|kernels status' | grep -v grep`（動いている監視スクリプト）。認証エラーが出たら何もせず、`kaggle auth login` の依頼だけを報告する。
-2. **新しいスコアを記録する**: まだ ledger にない Public スコアがあれば、ref・内容・スコアを追記する。そのとき、事前に書いたルール（S2 と S1 の比較など）で判定し、結論を書く。
-3. **次の候補を 1 つ決める**（1 周につき 1 つまで）。候補の優先順位:
-   a. 判定ルールで決まった次の手（例: S2 が S1 より 0.5 以上低ければ、NVARC をフル（11h）に戻す）
-   b. 仕組みで説明できる改善を 1 つ（例: force_submit_turns による「submit しない失敗」の削減。改善点のリストは「## 候補リスト」を参照）
-   c. 何もなければ、現在の最良構成の別シード（sampling seed）。最終枠の分散を減らすためで、Public の点数を探すためではない。
-4. **build → push → smoke**: `uv run python notebooks/hybrid_v1/build.py --out <scratch> --id taichiiiii/arc2-hybrid-v1`、続けて `kaggle kernels push -p <scratch>`。push する前に `uv run ruff check .` と `uv run pytest -q` を通し、kernel-metadata の `is_private: true` を確認する。設定値は build.py の CONFIG を 1 か所だけ変える。
-5. **自動提出の監視を張る**: `scripts/watch_submit_hybrid.sh taichiiiii/arc2-hybrid-v1 <version> "<message>"` を、terminal の background と persist_on_release で起動する。このスクリプトは、smoke の目印（"server ready" と "SMOKE score merged"）がログにあり、その日の UTC の枠が空いているときだけ提出する。同じ version 用の監視スクリプトがすでに動いていれば、新しく起動しない。
-6. **ledger に追記して commit・push する**: 作業ブランチ `feat/research-frontier-copy` に、何を変えたか、なぜか、smoke の結果を書く。新しい落とし穴や手順が分かったら、スキル `arc-agi-2-repo` に追記する（skill_manage patch）。他のコンペでも使える教訓は `kaggle-competition-ops` に書く。
-7. **報告**: 日本語で 5 行以内。新しいスコア、判定、次に出す候補、提出予定時刻。
+1. **状態を読む**: `analysis/experiment_ledger.md` の末尾（特に「エージェント評価」表）、`kaggle competitions submissions arc-prize-2026-arc-agi-2 --page-size 20`、`kaggle kernels status taichiiiii/arc2-agent-eval`、`kaggle kernels status taichiiiii/arc2-hybrid-v1`、`date -u`、`ps aux | grep -E 'watch_submit' | grep -v grep`。認証エラーが出たら何もせず、`kaggle auth login` の依頼だけを報告する。
+2. **新しい結果を記録する**:
+   - Public スコア: まだ ledger にないものを追記し、事前登録した判定ルールで判定する。
+   - エージェント評価: `arc2-agent-eval` が COMPLETE で、まだ記録していない version があれば、`scripts/fetch_log.py taichiiiii/arc2-agent-eval <out>` でログを取り、`EVAL {...}` の行（attempted / verified / correct / false_verified / outputs）を ledger の「エージェント評価」表に追記する。
+3. **(A) 次の評価を 1 つ回す**（評価カーネルが動いていなければ）:
+   - 「エージェント改善候補」の上から、まだ測っていないものを 1 つ選ぶ。変える設定は 1 つだけ。比べる相手は直前の採用構成（baseline）。
+   - `uv run python notebooks/hybrid_v1/build.py --out <scratch> --id taichiiiii/arc2-agent-eval --set agent_eval_h=2.0 --set <key>=<json>` でビルドし、`kaggle kernels push -p <scratch>`。コードを変える候補は、先にテストを書いて ruff と pytest を通す。
+   - 1 回あたり GPU クォータを約 5h 使う。週の残りが 8h を切ったら評価を止め、提出用の smoke にクォータを残す。
+4. **採用の判定**（事前登録、変えない）: 候補が baseline に比べて **correct が +5 タスク以上**、かつ **false_verified が増えていない**なら採用する。それ以外は不採用。不採用でも、仕組み上の理由が分かったら ledger に書く。
+5. **(B) 提出**: その日の UTC の枠が未使用なら、「現在の本番構成」に、採用済みのエージェント変更を反映して `arc2-hybrid-v1` に push する（`build.py --id taichiiiii/arc2-hybrid-v1`、CONFIG を直接編集してコミット）。続けて `scripts/watch_submit_hybrid.sh taichiiiii/arc2-hybrid-v1 <version> "<message>"` を background と persist_on_release で起動する。前回の提出から本番構成が変わっていなければ、同じ構成を別シードで出してよい（最終 2 本のぶれを測るため）。ただし同じ構成を 3 本以上は出さない。
+6. **ledger に追記して commit・push する**: 作業ブランチ `feat/research-frontier-copy`。新しい落とし穴や手順が分かったら、スキル `arc-agi-2-repo` に追記する。
+7. **報告**: 日本語で 5 行以内。新しいスコアや評価結果、判定、次に回すもの。
 
 ## 制約
-- 提出は 1 日 1 本（UTC）。採点中の提出があっても、新しい提出は受け付けられる（10/25 に確認）。
-- GPU クォータ: smoke 1 回で L4×4 を約 1.5h 使う（クォータは約 3h 分）。週 30h なので、1 日 1 回の push に抑える。
-- 締め切りが近いとき: 11/2 の提出は 23:59 UTC までに。smoke と push に約 2h かかるので、11/2 20:00 UTC までに push する。
-- 最終の 2 本の選択は 11/2 に行う。ルールは ledger に書いてある。選択は最終日に、ユーザーに報告したうえで行う。
+- 提出は 1 日 1 本（UTC）。採点中の提出があっても、新しい提出は受け付けられる。
+- GPU クォータ（週 30h、L4×4 は 2 倍の速さで消費）: smoke 1 回で約 2h、エージェント評価 1 回で約 5h。
+- 11/2 の提出は 23:59 UTC 締め切り。11/2 20:00 UTC までに push する。
+- 最終の 2 本の選択は 11/2 に、ユーザーに報告したうえで行う（ルールは ledger）。
+- evaluation のタスクは学習データに含まれている疑いがあるので、評価の絶対値は高めに出る。使うのは baseline との比較だけ。
 
-## 候補リスト（仕組みで説明できるもの、上ほど優先）
-1. force_submit_turns=4（v4 として push 済み、10/26 の枠で提出予定）
-2. NVARC の時間配分: 7h と 11h（判定ルールで決める）
-3. エージェントの試行を 2 回にする（設定 `attempts: 2` だけで実装できる）。solve_repl は全タスクの 1 回目を投入し終えてから 2 回目に進み、verified 済みのタスクは飛ばす。そのため 2 回目は、締め切りまでの余り時間で未解決のタスクだけを再挑戦することになる。1 回目が締め切り内に終わらない構成では効かないので、smoke のログで、1 回目の終了時刻と締め切りの差を見てから選ぶ。
-5. NVARC のみ（`skip_agent: true`、実装済み）。v6 < 26.4 のとき
-4. 分割方式（NVARC を GPU 2 枚、vLLM を TP2 で同時に動かす。実装済み、smoke は未実施）
+## 現在の本番構成
+- v6（NVARC 10.5h 優先、エージェントは残り時間、agent_reserve_h 1.0、force_submit_turns 4）。10/26 13:07 UTC に提出（ref 57667359）。
+- v6 の Public で決める次の手（事前登録）: v6 ≥ 26.4 なら NVARC 優先の構成を維持する。v6 < 26.4 なら `skip_agent: true`（NVARC のみ）にする。
+
+## エージェント改善候補（上ほど優先。1 回の評価で 1 つ）
+0. baseline: v6 のエージェント設定のまま（評価カーネル v1、10/26 push）
+1. `force_submit_turns: 0`（強制 submit を外す。v4 の smoke で、強制された submit がそのまま failed になっていたため。効果を切り分ける）
+2. `thinking_token_budget: 12288`（思考を長くする。上位は長い思考で解いているという報告がある）
+3. `attempts: 2`（余り時間で未解決タスクに 2 回目の試行）
+4. `temperature: 1.0`（試行の多様性を増やす。上位の duck harness は高温を使っている）
+5. `max_cap: 80000`（1 回の試行のトークン上限を広げる。評価の 2h で全タスクを回り切るかを確かめてから）
