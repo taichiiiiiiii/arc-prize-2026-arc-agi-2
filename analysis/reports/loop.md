@@ -29,8 +29,8 @@
 - v6 の Public で決める次の手（事前登録）: v6 ≥ 26.4 なら NVARC 優先の構成を維持する。v6 < 26.4 なら `skip_agent: true`（NVARC のみ）にする。
 
 ## エージェント改善候補（上ほど優先。1 回の評価で 1 つ）
-0. baseline: v6 のエージェント設定のまま（評価カーネル v1、10/26 push）
-1. `force_submit_turns: 0`（強制 submit を外す。v4 の smoke で、強制された submit がそのまま failed になっていたため。効果を切り分ける）
+0. baseline: v6 のエージェント設定のまま（評価 v1: correct 6, false_verified 1, 58 タスク着手）
+1. [評価 v2 実行中] `force_submit_turns: 0`（強制 submit を外す。v4 の smoke で、強制された submit がそのまま failed になっていたため。効果を切り分ける）
 2. `thinking_token_budget: 12288`（思考を長くする。上位は長い思考で解いているという報告がある）
 3. `attempts: 2`（余り時間で未解決タスクに 2 回目の試行）
 4. `temperature: 1.0`（試行の多様性を増やす。上位の duck harness は高温を使っている）

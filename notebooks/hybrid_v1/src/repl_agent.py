@@ -463,7 +463,8 @@ def solve_repl(tasks, client, attempts=2, concurrency=32, deadline=None, stop_af
             n_ver = sum(1 for v in shared.verified.values() if v)
         log(f"[{time.time() - t0:6.0f}s] {att.task_id}#{att.idx} {att.status:8s} "
             f"turns {att.turns:2d} py {att.python_calls:2d} sub {att.submits} "
-            f"tok {att.gen_tokens:6d} | done {done_n[0]}/{len(atts)} tasks verified {n_ver}")
+            f"tok {att.gen_tokens:6d} | done {done_n[0]}/{len(atts)} tasks verified {n_ver}"
+            f" | {str(getattr(att, 'note', '') or '')[:80]}")
         return att
 
     with ThreadPoolExecutor(max_workers=concurrency) as ex:

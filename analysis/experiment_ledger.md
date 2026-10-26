@@ -69,4 +69,12 @@
 ### エージェント評価
 | version | 変更 | attempted | verified | correct | false_verified | outputs | 判定 |
 |---|---|---|---|---|---|---|---|
-| v1 | baseline（v6 の設定） | | | | | | |
+| v1 | baseline（v6 の設定） | 120（実着手 58） | 7 | 6 | 1 | 6/172 | baseline |
+| v2 | force_submit_turns: 0 | | | | | | 実行中（10/26 18:45 UTC push） |
+
+## 2026-10-26 18:45 UTC ループ（評価 v1 の結果）
+- **評価 v1（baseline）**: verified 7、correct 6、false_verified 1、6/172 出力。2h 枠で最後まで進んだのは 58 タスクだけで、残り 62 タスクは打ち切り（うち約 30 タスクは同時 32 本の枠待ちで、1 トークンも生成していない）。比較できるのは「2h で何タスク解けるか」という時間込みの指標になる。
+- 失敗の約 20 件が「turns 5, sub 0, failed」で、10〜20k トークンしか使っていない。force_submit_turns=4 によって 5 ターン目に submit を強制した呼び出しが、submit なしの failed で終わっている（API エラーの可能性が高い）。これは候補 1（force_submit_turns: 0）でそのまま切り分けられる。原因を見えるようにするため、ログ行に att.note を出す変更（ログのみで、挙動は変えない）を入れた。
+- 評価 v2 = `force_submit_turns: 0` を push（kernel version 2）。採用ルールは事前登録どおり（correct ≥ 11 かつ false_verified ≤ 1）。
+- 提出: 10/26（UTC）の枠は v6 で使用済み。v6（57667359）は PENDING。10/27 の手は、事前登録どおり v6 のスコアで決める。
+
