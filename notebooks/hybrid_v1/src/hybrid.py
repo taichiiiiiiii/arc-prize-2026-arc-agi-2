@@ -340,7 +340,8 @@ def main(cfg):
         if split:
             nvarc_end = hard_end - 25 * 60
         else:
-            nvarc_end = min(start + cfg["nvarc_hours"] * 3600, hard_end - 3 * 3600)
+            nvarc_end = min(start + cfg["nvarc_hours"] * 3600,
+                            hard_end - cfg.get("agent_reserve_h", 3.0) * 3600)
         agent_end = hard_end
     else:
         keys = cfg["smoke_tasks"]
