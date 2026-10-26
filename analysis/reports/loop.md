@@ -30,8 +30,8 @@
 
 ## エージェント改善候補（上ほど優先。1 回の評価で 1 つ）
 0. baseline: v6 のエージェント設定のまま（評価 v1: correct 6, false_verified 1, 58 タスク着手）
-1. [評価 v2 実行中] `force_submit_turns: 0`（強制 submit を外す。v4 の smoke で、強制された submit がそのまま failed になっていたため。効果を切り分ける）
-2. `thinking_token_budget: 12288`（思考を長くする。上位は長い思考で解いているという報告がある）
+1. [測定済み・不採用] `force_submit_turns: 0`（評価 v2: correct 4、false_verified 2。token 上限での失敗が 28 件に増えた）
+2. [次の評価。週の GPU クォータがリセットされるまで保留] `thinking_token_budget: 12288`（思考を長くする。上位は長い思考で解いているという報告がある）
 3. `attempts: 2`（余り時間で未解決タスクに 2 回目の試行）
 4. `temperature: 1.0`（試行の多様性を増やす。上位の duck harness は高温を使っている）
 5. `max_cap: 80000`（1 回の試行のトークン上限を広げる。評価の 2h で全タスクを回り切るかを確かめてから）
