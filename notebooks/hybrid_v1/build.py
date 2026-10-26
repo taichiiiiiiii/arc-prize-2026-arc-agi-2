@@ -160,5 +160,11 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--id", default="taichiiiii/arc2-hybrid-v1")
+    ap.add_argument("--set", action="append", default=[], metavar="KEY=JSON",
+                    help="override a CONFIG entry, e.g. --set agent_eval_h=2.0")
     a = ap.parse_args()
+    for kv in a.set:
+        k, v = kv.split("=", 1)
+        assert k in CONFIG or k in ("agent_eval_h", "agent_eval_tasks", "skip_agent"), k
+        CONFIG[k] = json.loads(v)
     print(build(Path(a.out), a.id))

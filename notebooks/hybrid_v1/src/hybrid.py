@@ -306,6 +306,23 @@ def run_agent(cfg, tasks, order, nv_sub, deadline, results):
     alog.close()
 
 
+def eval_report(tasks, results, agent_sub, sols):
+    """Per-task agent outcome on labelled tasks: attempted / verified / correct / false-verified."""
+    rows = {}
+    for t in tasks:
+        recs = results.get(t, [])
+        ver = any(r["status"] == "verified" for r in recs)
+        ok, tot = score({t: agent_sub[t]}, {t: sols[t]})
+        rows[t] = {"attempted": bool(recs), "verified": ver, "correct": ok == tot,
+                   "tokens": sum(r.get("gen_tokens", 0) for r in recs)}
+    v = [r for r in rows.values() if r["verified"]]
+    summary = {"tasks": len(rows), "attempted": sum(r["attempted"] for r in rows.values()),
+               "verified": len(v), "correct": sum(r["correct"] for r in rows.values()),
+               "false_verified": sum(not r["correct"] for r in v),
+               "outputs": score(agent_sub, sols)}
+    return {"summary": summary, "tasks": rows}
+
+
 def score(sub, sols):
     tot = ok = 0
     for t, truths in sols.items():
@@ -343,6 +360,10 @@ def main(cfg):
             nvarc_end = min(start + cfg["nvarc_hours"] * 3600,
                             hard_end - cfg.get("agent_reserve_h", 3.0) * 3600)
         agent_end = hard_end
+    elif cfg.get("agent_eval_h"):            # agent-only evaluation on the evaluation set
+        keys = sorted(ch) if cfg.get("agent_eval_tasks", "all") == "all" else cfg["agent_eval_tasks"]
+        nvarc_end = time.time()
+        agent_end = time.time() + cfg["agent_eval_h"] * 3600 + 15 * 60
     else:
         keys = cfg["smoke_tasks"]
         nvarc_end = time.time() + cfg["smoke_nvarc_min"] * 60
@@ -379,7 +400,9 @@ def main(cfg):
     results = {}
     proc = None
     nv_thread = None
-    if split:
+    if cfg.get("agent_eval_h") and not rerun:
+        merge_all(results)
+    elif split:
         nv_thread = threading.Thread(target=nvarc_phase, daemon=True)
         nv_thread.start()
     else:
@@ -423,6 +446,9 @@ def main(cfg):
                       for t in keys}
         for name, s in (("nvarc", nv["sub"]), ("agent", agent_only), ("merged", final)):
             log(f"SMOKE score {name}: {score(s, sols)}")
+        rep = eval_report(tasks, results, agent_only, sols)
+        (WORK / "agent_eval.json").write_text(json.dumps(rep))
+        log("EVAL " + json.dumps(rep["summary"]))
 
 
 if __name__ == "__main__":
