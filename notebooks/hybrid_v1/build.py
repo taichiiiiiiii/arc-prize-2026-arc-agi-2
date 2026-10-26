@@ -37,7 +37,8 @@ CONFIG = {
     "max_model_len": 40960,
     "max_num_seqs": 32,
     "server_start_s": 1500,
-    "nvarc_hours": 7.0,
+    "nvarc_hours": 10.5,
+    "agent_reserve_h": 1.0,   # S2 (NVARC 7h) 24.44 < S1 (NVARC-only) 27.36: NVARC first, agent gets leftovers
     "nvarc_grace_s": 900,
     "reserve_s": 30 * 60,
     "confident_nvarc": 0.75,
