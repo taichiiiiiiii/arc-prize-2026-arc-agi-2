@@ -105,7 +105,7 @@ def test_force_submit_after_turns():
     assert report["attempts"][0]["status"] == "verified"
 
 
-def _fake_main_env(tmp_path, monkeypatch, split):
+def _fake_main_env(tmp_path, monkeypatch, split, **extra):
     work = tmp_path / "w"
     work.mkdir()
     ch = {"t1": TASK, "t2": TASK}
@@ -132,7 +132,7 @@ def _fake_main_env(tmp_path, monkeypatch, split):
         seen["order"] = order
         results["t2"] = [{"status": "verified", "programs": [{"n_ok": 2, "n_train": 2, "test": [[[5, 4]]]}]}]
     monkeypatch.setattr(hybrid, "run_agent", fake_agent)
-    cfg = {"mode": "split" if split else "sequential", "nvarc_hours": 5, "smoke_tasks": []}
+    cfg = {"mode": "split" if split else "sequential", "nvarc_hours": 5, "smoke_tasks": [], **extra}
     hybrid.main(cfg)
     return json.load(open(work / "submission.json")), seen
 
@@ -144,6 +144,12 @@ def test_main_merges_nvarc_and_agent(tmp_path, monkeypatch, split):
     assert sub["t2"] == [{"attempt_1": [[5, 4]], "attempt_2": [[3]]}]
     if not split:
         assert seen["order"] == ["t2", "t1"]       # uncertain NVARC task first
+
+
+def test_skip_agent_keeps_nvarc(tmp_path, monkeypatch):
+    sub, seen = _fake_main_env(tmp_path, monkeypatch, False, skip_agent=True)
+    assert "order" not in seen
+    assert sub["t2"] == [{"attempt_1": [[3]], "attempt_2": [[4]]}]
 
 
 def test_decode_nvarc_on_synthetic_outputs(tmp_path, monkeypatch):
