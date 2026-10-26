@@ -70,7 +70,7 @@
 | version | 変更 | attempted | verified | correct | false_verified | outputs | 判定 |
 |---|---|---|---|---|---|---|---|
 | v1 | baseline（v6 の設定） | 120（実着手 58） | 7 | 6 | 1 | 6/172 | baseline |
-| v2 | force_submit_turns: 0 | | | | | | 実行中（10/26 18:45 UTC push） |
+| v2 | force_submit_turns: 0 | 120（実着手 42） | 6 | 4 | 2 | 5/172 | 不採用（correct −2、false_verified +1） |
 
 ## 2026-10-26 18:45 UTC ループ（評価 v1 の結果）
 - **評価 v1（baseline）**: verified 7、correct 6、false_verified 1、6/172 出力。2h 枠で最後まで進んだのは 58 タスクだけで、残り 62 タスクは打ち切り（うち約 30 タスクは同時 32 本の枠待ちで、1 トークンも生成していない）。比較できるのは「2h で何タスク解けるか」という時間込みの指標になる。
@@ -78,3 +78,9 @@
 - 評価 v2 = `force_submit_turns: 0` を push（kernel version 2）。採用ルールは事前登録どおり（correct ≥ 11 かつ false_verified ≤ 1）。
 - 提出: 10/26（UTC）の枠は v6 で使用済み。v6（57667359）は PENDING。10/27 の手は、事前登録どおり v6 のスコアで決める。
 
+
+## 2026-10-26 21:50 UTC ループ（評価 v2 の結果）
+- **評価 v2（force_submit_turns: 0）**: verified 6、correct 4、false_verified 2、5/172 出力。事前登録の採用ルール（correct ≥ 11 かつ false_verified ≤ 1）を満たさないので**不採用**。baseline は force_submit_turns=4 のまま。
+- 終わり方の内訳（120 タスク、att.note より）: stopped（deadline）59、stopped（deadline, request cut）19、failed（token budget）28、failed（HTTP 500 InternalServerError、message 空）8、verified 6。強制 submit を外すと、token 上限まで考え続ける失敗が 28 件に増える。また、vLLM が HTTP 500 を返す失敗が force_submit と無関係に 8 件ある（vLLM 側のログは kernel ログに出ていないので原因は未特定。長い文脈か MTP 投機デコードが疑わしい）。
+- **評価の一時停止**: 今週（10/24〜）の GPU 使用量を推定すると、S1 の 2 本、hybrid smoke 6 本（約 2h ずつ）、評価 2 本（約 5h ずつ）で約 25h。同じアカウントで別コンペの kernel（arc3-m2-bench*）も動いている。loop.md の「残り 8h を切ったら評価を止める」に当たる可能性が高いので、次の評価（候補 2: thinking_token_budget 12288）は週のクォータがリセットされるまで保留し、10/27 以降の提出用 smoke にクォータを残す。正確な残量は Kaggle の設定画面でしか見られない（ユーザーに確認を依頼）。
+- 提出: 10/26（UTC）の枠は v6 で使用済み。v6（57667359）は PENDING。10/27 の手は事前登録どおり、v6 ≥ 26.4 なら `attempts: 2`、v6 < 26.4 なら `skip_agent: true`。
