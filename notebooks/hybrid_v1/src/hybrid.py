@@ -386,6 +386,8 @@ def main(cfg):
         nvarc_phase()
         merge_all(results)
     try:
+        if cfg.get("skip_agent"):              # NVARC-only candidate: no vLLM at all
+            raise RuntimeError("skip_agent set")
         rt.join(timeout=max(0, agent_end - time.time() - 45 * 60))
         if "py" not in state:
             raise RuntimeError("runtime not ready: " + state.get("error", "timeout")[-500:])
