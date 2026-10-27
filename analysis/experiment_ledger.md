@@ -84,3 +84,8 @@
 - 終わり方の内訳（120 タスク、att.note より）: stopped（deadline）59、stopped（deadline, request cut）19、failed（token budget）28、failed（HTTP 500 InternalServerError、message 空）8、verified 6。強制 submit を外すと、token 上限まで考え続ける失敗が 28 件に増える。また、vLLM が HTTP 500 を返す失敗が force_submit と無関係に 8 件ある（vLLM 側のログは kernel ログに出ていないので原因は未特定。長い文脈か MTP 投機デコードが疑わしい）。
 - **評価の一時停止**: 今週（10/24〜）の GPU 使用量を推定すると、S1 の 2 本、hybrid smoke 6 本（約 2h ずつ）、評価 2 本（約 5h ずつ）で約 25h。同じアカウントで別コンペの kernel（arc3-m2-bench*）も動いている。loop.md の「残り 8h を切ったら評価を止める」に当たる可能性が高いので、次の評価（候補 2: thinking_token_budget 12288）は週のクォータがリセットされるまで保留し、10/27 以降の提出用 smoke にクォータを残す。正確な残量は Kaggle の設定画面でしか見られない（ユーザーに確認を依頼）。
 - 提出: 10/26（UTC）の枠は v6 で使用済み。v6（57667359）は PENDING。10/27 の手は事前登録どおり、v6 ≥ 26.4 なら `attempts: 2`、v6 < 26.4 なら `skip_agent: true`。
+
+## 2026-10-27 09:57 UTC ループ（認証復旧、v6 待ち）
+- Kaggle 認証は復旧（monitor の KAGGLE_AUTH_FAILED が解消）。v6（57667359）は提出から約 21h で PENDING のまま。10/27（UTC）の枠は未使用。v6 の監視スクリプト（pid 22423）は稼働中。
+- 10/27 の手は事前登録どおり v6 のスコアで決める（≥ 26.4 → `attempts: 2`、< 26.4 → `skip_agent: true`）。今周は push しない（どちらを出すかが未確定で、smoke は約 2h で間に合うため）。
+- 締め切り対策（スコアが出る前に固定）: **18:00 UTC までに v6 のスコアが出なければ、`skip_agent: true` を push して 10/27 の枠で提出する**。理由: NVARC のみの自前パイプラインは、v6 の結果にかかわらず最終 2 本の「NVARC 主体」候補として測る価値があり、S1 から Leg C の無駄 1h を除いた構成として仕組みで説明できる。
