@@ -61,6 +61,14 @@ class ChatClient:
             payload["reasoning_effort"] = self.reasoning_effort
         if self.thinking_token_budget:
             payload["thinking_token_budget"] = self.thinking_token_budget
+        if tools and tool_choice:
+            # A forced (named) tool call is decoded by vLLM's guided JSON *after* the reasoning
+            # section. If the model thinks until max_tokens, content is None and vLLM 0.19 hits
+            # `assert content is not None` (serving.py:899) -> HTTP 500 (all 8 HTTP 500s in
+            # agent-eval v2 were forced submits). Forced calls therefore skip thinking.
+            payload["chat_template_kwargs"]["enable_thinking"] = False
+            payload.pop("thinking_token_budget", None)
+            payload["max_tokens"] = min(payload["max_tokens"], 8192)
         if tools:
             payload["tools"] = tools
             # A named tool forces that call (vLLM guided decoding); default lets it choose.

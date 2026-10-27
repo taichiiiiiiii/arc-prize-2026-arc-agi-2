@@ -221,3 +221,34 @@ def test_agent_eval_mode_skips_nvarc(tmp_path, monkeypatch):
     rep = json.loads((work / "agent_eval.json").read_text())["summary"]
     assert "nvarc" not in called
     assert rep["correct"] == 1 and rep["tasks"] == 2
+
+
+def test_forced_tool_call_disables_thinking(monkeypatch):
+    import client as cl
+
+    sent = {}
+
+    class Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "x"}, "finish_reason": "stop"}]}).encode()
+
+    def fake_urlopen(req, timeout=None):
+        sent.clear()
+        sent.update(json.loads(req.data.decode()))
+        return Resp()
+
+    monkeypatch.setattr(cl.urllib.request, "urlopen", fake_urlopen)
+    c = cl.ChatClient("http://x/v1", "qwen", thinking_token_budget=6144, max_tokens=16384)
+    tools = [{"type": "function", "function": {"name": "submit", "parameters": {}}}]
+    c.chat([{"role": "user", "content": "hi"}], tools=tools)
+    assert sent["chat_template_kwargs"]["enable_thinking"] is True and sent["thinking_token_budget"] == 6144
+    c.chat([{"role": "user", "content": "hi"}], tools=tools, tool_choice="submit")
+    assert sent["chat_template_kwargs"]["enable_thinking"] is False
+    assert "thinking_token_budget" not in sent and sent["max_tokens"] == 8192
+    assert sent["tool_choice"] == {"type": "function", "function": {"name": "submit"}}

@@ -98,3 +98,9 @@
   - push と評価はできない。毎日の枠には既存の version しか出せず、候補は v6 だけになる（v3/v4/v5 は NVARC 7h で劣ると判明済み）。v6 は 2 本出したので、これ以上の同一提出はしない。リセットまでの枠は使わずに見送る。
   - リセット後の優先順位: ① 提出用 smoke（v7 = v6 +「改善候補で採用されたもの」）。② 評価は候補 2（thinking_token_budget 12288）と、HTTP 500（8 件）の原因調査（max_model_len と文脈長の関係）。1 日あたり、提出 smoke 1 回 + 評価 1 回まで。
 - 最終 2 本の候補（暫定。最終日に、事前のルールで確定する）: v6（30.56）と、v6 の複製（57701545）のうちスコアのよい方 + NVARC 主体と系統の違うもの。ただし今のところ系統の違う良い候補はない。
+
+## 2026-10-27 14:30 UTC クォータ切れの間の分析（評価 v2 の vLLM ログと attempts）
+- **HTTP 500 の原因を特定**: vLLM 0.19 の `_parse_tool_calls_from_content`（serving.py:899）の `assert content is not None` で落ちていた。8 件すべてが強制 submit（forced ≥ 1）のリクエスト。名前を指定した tool_choice は、思考部分の後に guided JSON で引数を生成する。思考だけで max_tokens に達すると content が None になり、assert で 500 になる。つまり、強制 submit は「考えすぎた試行を救う」はずが、まさにその状況で必ず失敗していた。
+  - 修正（client.py）: 強制 tool call のリクエストでは、enable_thinking=False にし、thinking_token_budget を外し、max_tokens を最大 8192 にする。テストを追加し、20 件通過。この修正はバグ修正で、統合は単調（verified 以外は NVARC を押しのけない）なので、悪化しうる経路はない。評価を待たずに v7 に入れる。評価では、強制 submit の失敗が減ったことと、false_verified が増えていないことを確かめる。
+- **スループット**: 2h で生成 278 万トークン（386 tok/s）。vLLM の生成速度は中央値 420、最大 656 tok/s。Running は常に 32（max_num_seqs と同じ値で張り付き）、Waiting はほぼ 0。KV cache の使用率は最大 63%。→ 同時実行数が上限になっている。max_num_seqs と concurrency を 48 に上げれば、KV cache に収まったままスループットが上がる見込み（仕組みで説明できる）。評価では、着手タスク数（今は 71/120）と correct を見る。
+- 120 タスク中、着手は 71、1 回目を最後までやり切ったのは約 40。verified 6、failed（token budget）28。
