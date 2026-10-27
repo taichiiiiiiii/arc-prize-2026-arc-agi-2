@@ -44,6 +44,6 @@
 クォータ切れの間（push が「Maximum weekly GPU quota」で拒否される間）は、(A) の評価と (B) の push はできない。代わりに下の項目を上から 1 つ進める。どの項目もローカル（CPU、Mac）だけで完結させる。GPU を使う作業や Kaggle への push はしない。Mac の MLX サーバーは、項目で必要なときだけ立ち上げ、終わったら止める（空きメモリを 30% 以上に保つ）。
 - [x] （10/27 済み、余裕約 1h。下の ledger を参照）本番 rerun の時間予算を監査する: 12h 制限に対して、hard_end（11.5h）、NVARC の grace 900 s、decode、VALIDATE セルまで足して余裕があるかを、v6 のログ（`scripts/fetch_log.py taichiiiii/arc2-hybrid-v1`、save run の時刻）から見積もる。余裕が 15 分を切るなら reserve_s を増やす変更を v7 に入れる。
 - [x] （10/27 済み、テスト 23 件）本番 rerun の失敗経路を監査する: NVARC が例外で落ちた場合、vLLM が起動しない場合、エージェントが例外を出した場合のそれぞれで、submission.json が NVARC の答え（なければ fallback）で必ず書かれることを、テストで確かめる（なければ追加する）。
-- [ ] 評価 v1 のログ（`~/.hermes/profiles/arc2/cache/scratch/eval_v1.log`）と v2 を突き合わせ、強制 submit の前後で verified した試行の特徴（ターン数、python 回数）を表にする。候補「force_submit_after の値」を評価に回す価値があるかを判断する。
+- [x] （10/27 済み。force_submit_after は今は評価しない。リセット後は v7 で評価 baseline を取り直す）評価 v1 のログ（`~/.hermes/profiles/arc2/cache/scratch/eval_v1.log`）と v2 を突き合わせ、強制 submit の前後で verified した試行の特徴（ターン数、python 回数）を表にする。候補「force_submit_after の値」を評価に回す価値があるかを判断する。
 - [ ] 最終 2 本の選択手順を確定する: v6 の複製（57701545）のスコアが出たら、同じコード 2 本の差を「ノイズ幅」の実測値として ledger のルールに反映する。
 - [ ] リセット後すぐに push できるよう、v7 の提出版と評価 v3（concurrency 40）のビルドを scratch に作っておき、ビルドが通ることを確かめる（push はしない）。
