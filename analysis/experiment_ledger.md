@@ -104,3 +104,5 @@
   - 修正（client.py）: 強制 tool call のリクエストでは、enable_thinking=False にし、thinking_token_budget を外し、max_tokens を最大 8192 にする。テストを追加し、20 件通過。この修正はバグ修正で、統合は単調（verified 以外は NVARC を押しのけない）なので、悪化しうる経路はない。評価を待たずに v7 に入れる。評価では、強制 submit の失敗が減ったことと、false_verified が増えていないことを確かめる。
 - **スループット**: 2h で生成 278 万トークン（386 tok/s）。vLLM の生成速度は中央値 420、最大 656 tok/s。Running は常に 32（max_num_seqs と同じ値で張り付き）、Waiting はほぼ 0。KV cache の使用率は最大 63%。→ 同時実行数が上限になっている。max_num_seqs と concurrency を 48 に上げれば、KV cache に収まったままスループットが上がる見込み（仕組みで説明できる）。評価では、着手タスク数（今は 71/120）と correct を見る。
 - 120 タスク中、着手は 71、1 回目を最後までやり切ったのは約 40。verified 6、failed（token budget）28。
+- **vLLM の容量（評価 v2 のログ）**: KV cache は 360k トークン（「max_model_len 40960 で同時 23.7 本」と表示）。Qwen3.8 は mamba 系の層を持つハイブリッドで、attention の block size は 1600。同時 32 本で使用率は最大 63% なので、48 本だと約 95% になり、preempt が起きうる。**候補は 40 本**に修正する（約 79%）。prefix cache の hit 率は 19%、preempt は 0 件。
+- **MTP の受理率**: 1 個目 0.93、2 個目 0.85（平均の受理長 2.78）。受理率が高いので、`num_speculative_tokens: 3` で生成速度が上がる可能性がある（候補に追加。サーバーの起動設定を変えることになるので、評価で起動できるかも確かめる）。
