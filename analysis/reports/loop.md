@@ -31,7 +31,8 @@
 
 ## エージェント改善候補（上ほど優先。1 回の評価で 1 つ）
 - **v7 に入れることが確定しているもの**: 強制 submit で思考を切る修正（HTTP 500 のバグ修正。client.py、commit 済み）。クォータがリセットされたら最初に push する提出版 = v6 + この修正。
-- 次に評価する候補（優先）: `max_num_seqs: 48` と `concurrency: 48`（KV cache 63% で同時 32 本が上限になっている）。この 2 つは同時に変える（同じ仕組みの 1 変更として扱う）。
+- 次に評価する候補（優先）: `max_num_seqs: 40` と `concurrency: 40`（同時 32 本で KV cache 63%。48 本だと約 95% で preempt の危険）。2 つは同じ仕組みなので、1 変更として同時に変える。
+- その次: MTP の `num_speculative_tokens` を 2 → 3（受理率 0.93/0.85）。server_ladder の rung 0/1 の MTP2 を変える。
 0. baseline: v6 のエージェント設定のまま（評価 v1: correct 6, false_verified 1, 58 タスク着手）
 1. [測定済み・不採用] `force_submit_turns: 0`（評価 v2: correct 4、false_verified 2。token 上限での失敗が 28 件に増えた）
 2. [次の評価。週の GPU クォータがリセットされるまで保留] `thinking_token_budget: 12288`（思考を長くする。上位は長い思考で解いているという報告がある）
