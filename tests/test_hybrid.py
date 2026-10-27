@@ -278,3 +278,37 @@ def test_forced_submit_error_does_not_end_attempt():
                            force_submit_turns=2)
     assert "submit" in c.choices
     assert report["attempts"][0]["status"] == "verified"
+
+
+def test_nvarc_crash_still_writes_full_submission(tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("nvarc died")
+    monkeypatch.setattr(hybrid, "run_nvarc", boom)
+    monkeypatch.setattr(hybrid, "decode_nvarc", boom)
+    real_setattr = monkeypatch.setattr
+
+    def guarded(target, name, value=None, *rest):
+        if target is hybrid and name in ("run_nvarc", "decode_nvarc"):
+            return None                           # keep the crashing versions
+        return real_setattr(target, name, value, *rest)
+    monkeypatch.setattr = guarded
+    sub, _ = _fake_main_env(tmp_path, monkeypatch, False)
+    assert set(sub) == {"t1", "t2"}
+    assert sub["t2"][0]["attempt_1"] == [[5, 4]]                     # agent verified answer kept
+    assert sub["t1"][0]["attempt_1"] == TASK["test"][0]["input"]       # fallback, not [[0]]
+
+
+def test_server_failure_keeps_nvarc(tmp_path, monkeypatch):
+    def no_server(*a):
+        raise RuntimeError("no server")
+    real_setattr = monkeypatch.setattr
+
+    def guarded(target, name, value=None, *rest):
+        if target is hybrid and name == "start_server_ladder":
+            return real_setattr(target, name, no_server)
+        return real_setattr(target, name, value, *rest)
+    monkeypatch.setattr = guarded
+    sub, seen = _fake_main_env(tmp_path, monkeypatch, False)
+    assert "order" not in seen
+    assert sub["t1"] == [{"attempt_1": [[1]], "attempt_2": [[2]]}]
+    assert sub["t2"] == [{"attempt_1": [[3]], "attempt_2": [[4]]}]
