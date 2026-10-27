@@ -30,7 +30,7 @@
 - v6 の Public で決める次の手（事前登録）: v6 ≥ 26.4 なら NVARC 優先の構成を維持する。v6 < 26.4 なら `skip_agent: true`（NVARC のみ）にする。
 
 ## エージェント改善候補（上ほど優先。1 回の評価で 1 つ）
-- **v7 に入れることが確定しているもの**: 強制 submit で思考を切る修正（HTTP 500 のバグ修正。client.py、commit 済み）。クォータがリセットされたら最初に push する提出版 = v6 + この修正。
+- **v7 に入れることが確定しているもの**（どちらも commit 済み、テスト 21 件通過）: ① 強制 submit で思考を切る（client.py、HTTP 500 の修正）。② 強制 submit がエラーになっても試行を終わらせない（repl_agent.py）。クォータがリセットされたら最初に push する提出版 = v6 のコード + この 2 つ（CONFIG は v6 のまま）。
 - 次に評価する候補（優先）: `max_num_seqs: 40` と `concurrency: 40`（同時 32 本で KV cache 63%。48 本だと約 95% で preempt の危険）。2 つは同じ仕組みなので、1 変更として同時に変える。
 - その次: MTP の `num_speculative_tokens` を 2 → 3（受理率 0.93/0.85）。server_ladder の rung 0/1 の MTP2 を変える。
 0. baseline: v6 のエージェント設定のまま（評価 v1: correct 6, false_verified 1, 58 タスク着手）
