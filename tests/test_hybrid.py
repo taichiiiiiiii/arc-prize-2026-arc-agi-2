@@ -252,3 +252,29 @@ def test_forced_tool_call_disables_thinking(monkeypatch):
     assert sent["chat_template_kwargs"]["enable_thinking"] is False
     assert "thinking_token_budget" not in sent and sent["max_tokens"] == 8192
     assert sent["tool_choice"] == {"type": "function", "function": {"name": "submit"}}
+
+
+def test_forced_submit_error_does_not_end_attempt():
+    from repl_agent import solve_repl
+
+    class Flaky:
+        def __init__(self):
+            self.choices = []
+
+        def chat(self, messages, tools=None, tool_choice=None, **kw):
+            self.choices.append(tool_choice)
+            if tool_choice == "submit":
+                return {"error": "HTTP 500: ", "context_overflow": False}
+            if len(self.choices) < 5:
+                return {"content": "", "reasoning": "hmm", "finish_reason": "length", "tool_calls": [],
+                        "prompt_tokens": 1, "completion_tokens": 1}
+            return {"content": "", "reasoning": "", "finish_reason": "tool_calls",
+                    "tool_calls": [{"id": "s", "name": "submit", "arguments": {"code": FLIP}}],
+                    "prompt_tokens": 1, "completion_tokens": 1}
+
+    c = Flaky()
+    _, report = solve_repl({"t1": TASK}, c, attempts=1, concurrency=1, max_turns=10,
+                           max_gen_tokens=1000, context_budget=8000, nudge_every=6,
+                           force_submit_turns=2)
+    assert "submit" in c.choices
+    assert report["attempts"][0]["status"] == "verified"

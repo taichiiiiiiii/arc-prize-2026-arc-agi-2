@@ -318,6 +318,13 @@ def run_attempt(att, task, client, shared, deadline, max_turns=40, max_gen_token
                 if messages[-1]["role"] != "user":
                     messages.append({"role": "user", "content": TIMEOUT_HINT})
                 continue
+            if force and not getattr(att, "forced_error", False):
+                # A forced submit that errors (vLLM 0.19 HTTP 500, see client.py) must not
+                # end the attempt: reset the force counters once and carry on unforced.
+                att.forced_error = True
+                att.python_at_submit = att.python_calls
+                att.turns_at_submit = att.turns
+                continue
             att.status, att.note = "failed", r["error"][:200]
             break
         att.gen_tokens += r["completion_tokens"]
