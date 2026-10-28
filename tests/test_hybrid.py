@@ -312,3 +312,32 @@ def test_server_failure_keeps_nvarc(tmp_path, monkeypatch):
     assert "order" not in seen
     assert sub["t1"] == [{"attempt_1": [[1]], "attempt_2": [[2]]}]
     assert sub["t2"] == [{"attempt_1": [[3]], "attempt_2": [[4]]}]
+
+
+def test_local_eval_harness_runs_end_to_end(tmp_path, monkeypatch):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "local_eval", Path(__file__).resolve().parents[1] / "scripts" / "local_eval.py")
+    le = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(le)
+
+    class Solver:
+        def __init__(self, *a, **k):
+            pass
+
+        def chat(self, messages, tools=None, tool_choice=None, **kw):
+            return {"content": "", "reasoning": "", "finish_reason": "tool_calls",
+                    "tool_calls": [{"id": "s", "name": "submit", "arguments": {"code": FLIP}}],
+                    "prompt_tokens": 1, "completion_tokens": 1}
+
+    monkeypatch.setattr(le, "ChatClient", Solver)
+    monkeypatch.setattr(le, "ROOT", tmp_path)
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "arc-agi_evaluation_challenges.json").write_text(json.dumps({"t1": TASK, "t2": TASK}))
+    (tmp_path / "data" / "arc-agi_evaluation_solutions.json").write_text(
+        json.dumps({"t1": [[[5, 4]]], "t2": [[[0]]]}))
+    monkeypatch.setattr(sys, "argv", ["local_eval.py", "--name", "x", "--tasks", "2", "--hours", "0.01"])
+    le.main()
+    s = json.loads((tmp_path / "work" / "local_eval" / "x.json").read_text())["summary"]
+    assert (s["tasks"], s["verified"], s["correct"], s["false_verified"]) == (2, 2, 1, 1)
