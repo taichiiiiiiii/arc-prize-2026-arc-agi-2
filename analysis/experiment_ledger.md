@@ -135,3 +135,5 @@
 - 実行順: base_9b（実行中）→ base_9b_r2 → fst0（force_submit_turns 0）→ fsa3（force_submit_after 3）→ temp1（temperature 1.0）→ turn8k（turn_max_tokens 8192）。各 2h、合計で約 12h。
 - **ローカル base_9b（evaluation の短い順 40 タスク、2h）の結果**: verified 0、correct 0。1 回目の試行を最後までやり切ったのは 10/40 で、実効の生成速度は 31 tok/s（ARC のグリッドで prompt が長く、毎ターン prefill し直すため、ベンチの 107 tok/s に届かない）。9B は evaluation では正解 0 の床に張り付くので、変更の差を測れない。キューは止めた。
 - 対応: training の短い順 40 タスク（ARC-AGI-1 系の易しいタスク）で測る `--split training` を追加した。まず 1h の probe で、0 より大きい信号が出るかを確かめる。信号が出なければ、ローカル評価は「配線と挙動の確認」に限定する。
+- **ローカル probe_train（training の短い順 40 タスク、1h）**: verified 5、correct 5、false_verified 0（5/42 出力）。0 より大きい信号が出たので、ローカルでの比較は training で行う。ただし 1 回目を最後までやり切ったのは 6/40 で、結果は「時間内に何タスク解けるか」という、Kaggle の評価と同じ時間込みの指標になる。
+- キューを再開した（各 2h、training）: tbase1 → tbase2 → tfst0 → tfsa3 → ttemp1 → tturn8k。判定ルールは事前登録どおり（base 2 回の差を d とし、correct が max(3, 2d) 以上多く、かつ false_verified が増えていなければ「有望」）。
