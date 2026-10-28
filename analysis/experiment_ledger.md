@@ -137,3 +137,9 @@
 - 対応: training の短い順 40 タスク（ARC-AGI-1 系の易しいタスク）で測る `--split training` を追加した。まず 1h の probe で、0 より大きい信号が出るかを確かめる。信号が出なければ、ローカル評価は「配線と挙動の確認」に限定する。
 - **ローカル probe_train（training の短い順 40 タスク、1h）**: verified 5、correct 5、false_verified 0（5/42 出力）。0 より大きい信号が出たので、ローカルでの比較は training で行う。ただし 1 回目を最後までやり切ったのは 6/40 で、結果は「時間内に何タスク解けるか」という、Kaggle の評価と同じ時間込みの指標になる。
 - キューを再開した（各 2h、training）: tbase1 → tbase2 → tfst0 → tfsa3 → ttemp1 → tturn8k。判定ルールは事前登録どおり（base 2 回の差を d とし、correct が max(3, 2d) 以上多く、かつ false_verified が増えていなければ「有望」）。
+
+## 2026-10-28 06:20 UTC ループ（6 時間 bucket の定期起動。ローカル評価の二重実行を修正）
+- 新しいスコアはない。v6 の複製（57701545）は提出から約 17.5h で PENDING。GPU クォータは土曜まで戻らないので push・提出はしない（計画どおり 10/28 の枠は見送り）。
+- **ローカル評価キューが 2 本同時に動いていた**: 09:50 JST に起動した古い `local_eval_queue.sh`（pid 14224）が止められておらず、12:49 JST に起動した新しいキューと同じ mlx_lm.server を共有していた。古い方はスクリプト編集前の内容で `tbase1`（evaluation split）を走らせ、新しいキューの `tbase1.log` / attempts を上書きしていた。
+  - 影響: base_9b_r2（02:49〜04:49 UTC）と tbase1（03:49〜05:50 UTC）はそれぞれ約 1h、同時実行数が 2 倍の状態で測られた。どちらも correct 11 / false_verified 0 だが、**ノイズ幅 d の算出には使わない**（参考値）。tbase2 は開始 27 分で中断。
+  - 対応: 両方のキューと子プロセスを止め、キューを 1 本だけ再起動。base を 2 回（tbase1c、tbase2）取り直してから候補 4 本（tfst0 → tfsa3 → ttemp1 → tturn8k）を回す。各 2h、終了見込みは約 18:20 UTC。汚染された tbase1 のログは `work/local_eval/tbase1.contaminated.log` に退避。
