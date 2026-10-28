@@ -14,6 +14,7 @@ work/local_eval/runs.jsonl.
 import argparse
 import importlib.util
 import json
+import random
 import sys
 import threading
 import time
@@ -32,6 +33,20 @@ LOCAL_DEFAULTS = {          # small local model: smaller turns, fewer parallel r
     "concurrency": 8, "turn_max_tokens": 4096, "max_cap": 16000, "context_budget": 16000,
     "max_turns": 20,
 }
+
+
+class RetryingClient(ChatClient):
+    """mlx_lm.server is a ThreadingHTTPServer with a listen backlog of 5: a burst of
+    concurrent connects gets 'Connection reset by peer'. Retry those with jittered backoff."""
+
+    def chat(self, *args, **kw):
+        for i in range(8):
+            r = super().chat(*args, **kw)
+            err = r.get("error", "")
+            if not any(s in err for s in ("Connection reset", "Connection refused", "RemoteDisconnected")):
+                return r
+            time.sleep(1 + i * 2 + random.random() * 3)
+        return r
 
 
 def load_config():
@@ -65,7 +80,7 @@ def main():
     keys = pick_tasks(ch, a.tasks)
     tasks = {k: ch[k] for k in keys}
 
-    client = ChatClient(a.url, a.model, max_tokens=cfg["turn_max_tokens"],
+    client = RetryingClient(a.url, a.model, max_tokens=cfg["turn_max_tokens"],
                         temperature=cfg.get("temperature", 0.6), top_p=cfg.get("top_p", 0.95),
                         top_k=cfg.get("top_k", 20), thinking=True,
                         thinking_token_budget=cfg.get("thinking_token_budget"),
