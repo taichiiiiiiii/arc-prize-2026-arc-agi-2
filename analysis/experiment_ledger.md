@@ -144,3 +144,5 @@
   - 影響: base_9b_r2（02:49〜04:49 UTC）と tbase1（03:49〜05:50 UTC）はそれぞれ約 1h、同時実行数が 2 倍の状態で測られた。どちらも correct 11 / false_verified 0 だが、**ノイズ幅 d の算出には使わない**（参考値）。tbase2 は開始 27 分で中断。
   - 対応: 両方のキューと子プロセスを止め、キューを 1 本だけ再起動。base を 2 回（tbase1c、tbase2）取り直してから候補 4 本（tfst0 → tfsa3 → ttemp1 → tturn8k）を回す。各 2h、終了見込みは約 18:20 UTC。汚染された tbase1 のログは `work/local_eval/tbase1.contaminated.log` に退避。
 - **ローカル tbase1（REPL、training の短い順 40 タスク、2h、9B）**: verified 11、correct 11、false_verified 0（11/42 出力）。1 回目を最後までやり切ったのは 14/40。tbase2 以降は、direct 方式を優先するため止めた。同じ 40 タスク・2h で direct 方式を回し、方式どうしを比べる（9B なので、27B での差の向きの参考にとどめる）。
+- **ローカルでの direct 方式の配線確認**（9B、training の短い順 8 タスク × 2 サンプル、max_tokens 8192、concurrency 4、78 分）: **pass@2 で 8/8 タスク正解**。16 サンプル中 12 は 8192 トークンで思考が切れたが、rescue（思考オフで結論だけ出させる追い打ち）でグリッドが返り、正解した。parse と rescue が、本物の Qwen の出力で動くことを確かめた。
+- 方式どうしの比較を開始: direct（同じ 40 タスク、2h、concurrency 8、sample-major）。REPL の tbase1（11/40）と比べる。
