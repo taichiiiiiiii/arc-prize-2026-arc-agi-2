@@ -26,7 +26,7 @@ while true; do
   name=${line%% *}; args=${line#"$name"}
   echo "$(date -u '+%m-%d %H:%M') start $name $args"
   # shellcheck disable=SC2086
-  (cd "$ROOT" && uv run python scripts/local_eval.py --name "$name" --tasks 40 --hours 2 $args \
+  (cd "$ROOT" && uv run python scripts/local_eval.py --name "$name" --tasks 40 --hours 2 --split training $args \
      > "work/local_eval/$name.log" 2>&1)
   tail -1 "$ROOT/work/local_eval/$name.log"
   echo "$line" >> "$DONE"
