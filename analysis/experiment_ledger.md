@@ -133,3 +133,5 @@
 - `scripts/local_eval_queue.sh`: `work/local_eval/queue.txt` を上から順に実行し、空きメモリが 30% を切ったら待つ。
 - **ローカルでの判定ルール（事前登録）**: 同じ 40 タスクで base と対にして比べる。base を 2 回回し（base_9b、base_9b_r2）、その差をノイズ幅 d とする。候補が base の平均より correct で max(3, 2d) 以上多く、かつ false_verified が増えていなければ「有望」とし、クォータのリセット後に Kaggle の評価で確かめる。ローカルの結果だけで本番に入れることはしない。
 - 実行順: base_9b（実行中）→ base_9b_r2 → fst0（force_submit_turns 0）→ fsa3（force_submit_after 3）→ temp1（temperature 1.0）→ turn8k（turn_max_tokens 8192）。各 2h、合計で約 12h。
+- **ローカル base_9b（evaluation の短い順 40 タスク、2h）の結果**: verified 0、correct 0。1 回目の試行を最後までやり切ったのは 10/40 で、実効の生成速度は 31 tok/s（ARC のグリッドで prompt が長く、毎ターン prefill し直すため、ベンチの 107 tok/s に届かない）。9B は evaluation では正解 0 の床に張り付くので、変更の差を測れない。キューは止めた。
+- 対応: training の短い順 40 タスク（ARC-AGI-1 系の易しいタスク）で測る `--split training` を追加した。まず 1h の probe で、0 より大きい信号が出るかを確かめる。信号が出なければ、ローカル評価は「配線と挙動の確認」に限定する。
