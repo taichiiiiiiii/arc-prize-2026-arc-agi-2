@@ -121,3 +121,8 @@
   - v1 の failed のうち 20 件はちょうど 5 ターン目で終わっている＝強制 submit のターン。HTTP 500 の原因（思考だけで max_tokens に達し content が None になる）と一致し、v7 の修正（強制時は思考オフ）で、この 20 件は「失敗」ではなく実際に submit される経路に変わる。
   - v2（force_submit_turns 0）でも、verified 6 件のうち 3 件は forced=1（トークン量による force_submit_after が発動）で、いずれも submit 2 回・7〜9 ターン。強制 submit は verified の約半分の経路になっている。
 - **判断**: 候補「force_submit_after の値」を今は評価に回さない。v1/v2 の数字は強制 submit が 500 で壊れていた状態のもので、その値の良し悪しは測れていない。リセット後は、v7（修正入り）のエージェント設定で評価の baseline を取り直し（5 ターン目で終わる失敗が消えるか、false_verified が増えないかを見る）、その上で concurrency 40 を比べる。
+
+## 2026-10-28 00:15 UTC ループ（UTC 日付の更新）
+- 新しいスコアはない。v6 の複製（57701545）は提出から約 11.5h で PENDING。
+- 10/28 の枠用に v7（v6 の CONFIG + 強制 submit の修正 2 件）の push を 1 回試したが、`Maximum weekly GPU quota of 30.00 hours reached` で再び拒否された。週次リセットはまだ。既存 version で出せるのは v6 だけで、同じ構成 2 本の上限に達しているので、10/28 の枠は見送る（v7 の push が通れば同日に出す）。
+- クォータ切れの間の項目「v7 と評価 v3 のビルド確認」を完了: ruff・pytest 23 件通過、`~/.hermes/profiles/arc2/cache/scratch/v7_push`（is_private true、internet false）と `eval_v3`（max_num_seqs 40 / concurrency 40）をビルド済み。push 可能になったら v7 → 評価（v7 の baseline 取り直し）の順に push する。
