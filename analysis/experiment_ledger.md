@@ -126,3 +126,10 @@
 - 新しいスコアはない。v6 の複製（57701545）は提出から約 11.5h で PENDING。
 - 10/28 の枠用に v7（v6 の CONFIG + 強制 submit の修正 2 件）の push を 1 回試したが、`Maximum weekly GPU quota of 30.00 hours reached` で再び拒否された。週次リセットはまだ。既存 version で出せるのは v6 だけで、同じ構成 2 本の上限に達しているので、10/28 の枠は見送る（v7 の push が通れば同日に出す）。
 - クォータ切れの間の項目「v7 と評価 v3 のビルド確認」を完了: ruff・pytest 23 件通過、`~/.hermes/profiles/arc2/cache/scratch/v7_push`（is_private true、internet false）と `eval_v3`（max_num_seqs 40 / concurrency 40）をビルド済み。push 可能になったら v7 → 評価（v7 の baseline 取り直し）の順に push する。
+
+## 2026-10-28 01:00 UTC ローカル評価環境（ユーザー指示、Mac の小型モデル）
+- `scripts/local_eval.py`: mlx_lm.server（Qwen3.5-9B MLX 4bit。測定値は 1 本で 50 tok/s、8 本まとめて 107 tok/s）に対して、本番と同じエージェントのコードを evaluation の短い順 40 タスクで 2h 回す。出力は Kaggle の評価と同じ指標（attempted / verified / correct / false_verified）。ローカル用の既定値は concurrency 8、turn_max_tokens 4096、max_cap 16000、context_budget 16000、max_turns 20。
+  - mlx_lm.server は待ち受けのバックログが 5 しかなく、同時に接続すると ConnectionReset になる → 再試行を入れた。MLX は thinking_token_budget と tool_choice の強制を無視するので、それらの候補はローカルでは測れない。
+- `scripts/local_eval_queue.sh`: `work/local_eval/queue.txt` を上から順に実行し、空きメモリが 30% を切ったら待つ。
+- **ローカルでの判定ルール（事前登録）**: 同じ 40 タスクで base と対にして比べる。base を 2 回回し（base_9b、base_9b_r2）、その差をノイズ幅 d とする。候補が base の平均より correct で max(3, 2d) 以上多く、かつ false_verified が増えていなければ「有望」とし、クォータのリセット後に Kaggle の評価で確かめる。ローカルの結果だけで本番に入れることはしない。
+- 実行順: base_9b（実行中）→ base_9b_r2 → fst0（force_submit_turns 0）→ fsa3（force_submit_after 3）→ temp1（temperature 1.0）→ turn8k（turn_max_tokens 8192）。各 2h、合計で約 12h。
