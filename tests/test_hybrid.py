@@ -419,3 +419,16 @@ def test_main_direct_mode_merges_direct_answers(tmp_path, monkeypatch):
     assert "order" not in seen and calls["order"] == ["t2", "t1"]   # REPL agent not used
     assert sub["t2"] == [{"attempt_1": [[3]], "attempt_2": [[9]]}]    # agreeing direct answer
     assert sub["t1"] == [{"attempt_1": [[1]], "attempt_2": [[2]]}]
+
+
+def test_minimal_save_mode_skips_everything(tmp_path, monkeypatch):
+    called = {}
+    monkeypatch.setattr(hybrid, "run_nvarc", lambda *a, **k: called.setdefault("nvarc", 1))
+    monkeypatch.setattr(hybrid, "prepare_runtime", lambda *a: called.setdefault("rt", 1))
+    work = tmp_path / "w"
+    work.mkdir()
+    (work / "start_epoch.txt").write_text("0")
+    monkeypatch.setattr(hybrid, "WORK", work)
+    monkeypatch.delenv("KAGGLE_IS_COMPETITION_RERUN", raising=False)
+    hybrid.main({"save_mode": "minimal"})
+    assert called == {}
