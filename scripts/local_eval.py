@@ -68,6 +68,8 @@ def main():
     ap.add_argument("--model", default="default_model")
     ap.add_argument("--tasks", type=int, default=40)
     ap.add_argument("--hours", type=float, default=2.0)
+    ap.add_argument("--split", default="training", choices=["training", "evaluation"],
+                    help="training: easier tasks, so a small model gives a non-zero signal")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=JSON")
     a = ap.parse_args()
 
@@ -75,8 +77,8 @@ def main():
     for kv in a.set:
         k, v = kv.split("=", 1)
         cfg[k] = json.loads(v)
-    ch = json.loads((ROOT / "data" / "arc-agi_evaluation_challenges.json").read_text())
-    sols = json.loads((ROOT / "data" / "arc-agi_evaluation_solutions.json").read_text())
+    ch = json.loads((ROOT / "data" / f"arc-agi_{a.split}_challenges.json").read_text())
+    sols = json.loads((ROOT / "data" / f"arc-agi_{a.split}_solutions.json").read_text())
     keys = pick_tasks(ch, a.tasks)
     tasks = {k: ch[k] for k in keys}
 
@@ -108,7 +110,7 @@ def main():
     agent_sub = {t: hybrid.merge_task(tasks[t], empty[t], hybrid.agent_ranked(results.get(t, []), tasks[t]))
                  for t in keys}
     rep = hybrid.eval_report(tasks, results, agent_sub, {t: sols[t] for t in keys})
-    rep["summary"].update(name=a.name, overrides=a.set, hours=round((time.time() - t0) / 3600, 2),
+    rep["summary"].update(name=a.name, split=a.split, overrides=a.set, hours=round((time.time() - t0) / 3600, 2),
                           url=a.url, finished=sum(1 for t in keys for r in results.get(t, [])
                                                   if r["status"] != "stopped"))
     (out / f"{a.name}.json").write_text(json.dumps(rep, indent=1))
