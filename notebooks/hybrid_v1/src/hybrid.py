@@ -255,18 +255,65 @@ def agent_ranked(records, task):
     return out
 
 
-def merge_task(task, nv_rows, agent_rows):
-    """nv_rows[j] = {"attempt_1", "attempt_2"} from NVARC (or [[0]] when missing)."""
+def merge_task(task, nv_rows, agent_rows, direct_recs=None, nv_conf=None, conf_hi=0.75):
+    """Two distinct attempts per test output.
+
+    nv_rows[j] = {"attempt_1", "attempt_2"} from NVARC (or [[0]] when missing); agent_rows from
+    agent_ranked (REPL: verified first); direct_recs = direct-answer sample records for the task.
+    Order: REPL-verified > NVARC top1 > [direct answer that agrees (>=2 samples or = NVARC top2),
+    else NVARC top2 when NVARC is confident, else the direct answer] > the rest > input grid.
+    Only the *set* of two matters for pass@2."""
+    from direct import direct_candidates
     rows = []
     for j, x in enumerate(task["test"]):
         nv = [g for g in (nv_rows[j]["attempt_1"], nv_rows[j]["attempt_2"]) if g != [[0]]]
         ver, unver = agent_rows[j] if agent_rows else ([], [])
+        dc, counts = direct_candidates(direct_recs, j)
+        conf = (nv_conf or {}).get(j, 0.0)
+        second = []
+        if dc:
+            agree = counts[repr(dc[0])] >= 2 or (len(nv) > 1 and dc[0] == nv[1])
+            if agree or len(nv) < 2 or conf < conf_hi:
+                second = [dc[0]]
+        order = ver[:1] + nv[:1] + second + nv[1:] + dc + ver[1:] + unver + [x["input"]]
         cands = []
-        for g in ver[:1] + nv + ver[1:] + unver + [x["input"]]:
+        for g in order:
             if g not in cands:
                 cands.append(g)
         rows.append({"attempt_1": cands[0], "attempt_2": cands[1] if len(cands) > 1 else cands[0]})
     return rows
+
+
+def run_direct_phase(cfg, tasks, order, nv_sub, nv_conf_of, deadline, direct):
+    sys.path.insert(0, str(HERE))
+    from client import ChatClient
+    from direct import run_direct
+    client = ChatClient("http://127.0.0.1:1234/v1", "qwen", max_tokens=cfg.get("direct_max_tokens", 106496),
+                        temperature=cfg.get("direct_temperature", 1.0), top_p=cfg.get("top_p", 0.95),
+                        top_k=cfg.get("top_k", 20), thinking=True,
+                        thinking_token_budget=cfg.get("direct_thinking_budget", 98304),
+                        template_kwargs=cfg.get("direct_template_kwargs", {"reasoning_effort": "xhigh"}),
+                        timeout=4 * 3600)
+    log(f"direct: {len(order)} tasks, {(deadline - time.time()) / 3600:.2f} h, "
+        f"samples {cfg.get('direct_samples', 2)}, concurrency {cfg.get('direct_concurrency', 16)}")
+    lock = threading.Lock()
+    sub = json.load(open(SUB))
+    dlog = open(WORK / "direct_attempts.jsonl", "a")
+
+    def on_done(rec):
+        with lock:
+            tid = rec["task_id"]
+            direct.setdefault(tid, []).append(rec)
+            sub[tid] = merge_task(tasks[tid], nv_sub[tid], None, direct[tid], nv_conf_of(tid),
+                                  cfg.get("confident_nvarc", 0.75))
+            write_atomic(sub)
+            dlog.write(json.dumps({k: v for k, v in rec.items() if k != "grids"}) + "\n")
+            dlog.flush()
+
+    run_direct(client, tasks, order, deadline, samples=cfg.get("direct_samples", 2),
+               concurrency=cfg.get("direct_concurrency", 16), on_done=on_done, log=log,
+               rescue_tokens=cfg.get("rescue_tokens", 8192))
+    dlog.close()
 
 
 def run_agent(cfg, tasks, order, nv_sub, deadline, results):
@@ -390,14 +437,19 @@ def main(cfg):
         write_atomic(nv["sub"], WORK / "nvarc_submission.json")
         log(f"NVARC decoded {len(nv['meta'])} test outputs")
 
+    def nv_conf_of(t):
+        return {j: nv["meta"].get(f"{t}_{j}", {}).get("conf", 0.0) for j in range(len(tasks[t]["test"]))}
+
     def merge_all(results):
         sub = json.load(open(SUB))
         for t in keys:
             sub[t] = merge_task(tasks[t], nv["sub"][t],
-                                agent_ranked(results[t], tasks[t]) if results.get(t) else None)
+                                agent_ranked(results[t], tasks[t]) if results.get(t) else None,
+                                direct.get(t), nv_conf_of(t), cfg.get("confident_nvarc", 0.75))
         write_atomic(sub)
 
     results = {}
+    direct = {}
     proc = None
     nv_thread = None
     if cfg.get("agent_eval_h") and not rerun:
@@ -423,7 +475,10 @@ def main(cfg):
             return min(c) if c else 0.0
         hi = cfg.get("confident_nvarc", 0.75)
         order = by_len if split else sorted(keys, key=lambda t: (conf(t) >= hi, len(json.dumps(tasks[t]))))
-        run_agent(cfg, tasks, order, nv["sub"], agent_end - 5 * 60, results)
+        if cfg.get("agent_mode", "repl") == "direct":
+            run_direct_phase(cfg, tasks, order, nv["sub"], nv_conf_of, agent_end - 5 * 60, direct)
+        else:
+            run_agent(cfg, tasks, order, nv["sub"], agent_end - 5 * 60, results)
     except BaseException:
         log("agent phase failed:\n" + traceback.format_exc())
     finally:
@@ -442,11 +497,11 @@ def main(cfg):
         sols = json.load(open(one("/kaggle/input/**/arc-agi_evaluation_solutions.json")))
         sols = {k: sols[k] for k in keys}
         final = json.load(open(SUB))
-        agent_only = {t: merge_task(tasks[t], empty[t], agent_ranked(results.get(t, []), tasks[t]))
-                      for t in keys}
+        agent_only = {t: merge_task(tasks[t], empty[t], agent_ranked(results.get(t, []), tasks[t]),
+                                    direct.get(t)) for t in keys}
         for name, s in (("nvarc", nv["sub"]), ("agent", agent_only), ("merged", final)):
             log(f"SMOKE score {name}: {score(s, sols)}")
-        rep = eval_report(tasks, results, agent_only, sols)
+        rep = eval_report(tasks, {**direct, **results}, agent_only, sols)
         (WORK / "agent_eval.json").write_text(json.dumps(rep))
         log("EVAL " + json.dumps(rep["summary"]))
 
