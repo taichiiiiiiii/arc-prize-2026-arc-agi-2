@@ -67,3 +67,15 @@
 - `notebooks/hybrid_v1/src/direct.py` と、hybrid の `agent_mode: "direct"`。NVARC の後の残り時間で、Qwen3.8 に xhigh で直接グリッドを書かせる（1 タスク 2 サンプル、NVARC の確信度が低いタスクから）。統合のルール: NVARC top1 は必ず残す。2 つ目は、direct が一致していれば（2 サンプルが同じか、NVARC top2 と同じ）direct、NVARC が自信あり（conf ≥ 0.75）なら NVARC top2、それ以外は direct。
 - direct では max_model_len 131072、max_num_seqs 16（madarshbb の direct-b98k-c16 と同じ値）。
 - 10/31 のクォータのリセット後の最初の評価は、評価カーネル（`--set agent_eval_h=2.0 --set agent_mode='"direct"' --set max_model_len=131072 --set max_num_seqs=16`）で行う。REPL の baseline（correct 6）と比べる。
+
+## 10/31（土）クォータのリセット直後の手順（10/28 に確定、ビルド確認済み）
+最初の周で push が通ったら、下の 2 つを続けて push する。
+1. **評価 direct**（`taichiiiii/arc2-agent-eval`）:
+   `build.py --id taichiiiii/arc2-agent-eval --set agent_eval_h=2.0 --set agent_mode='"direct"' --set max_model_len=131072 --set max_num_seqs=16`
+   見る指標: correct（REPL の baseline は 6/120）、サンプル数、生成速度（vllm-server.log の throughput）、cut の数。
+2. **提出 v7**（`taichiiiii/arc2-hybrid-v1`）= v6（NVARC 10.5h 優先）+ 残り時間は direct + 強制 submit の修正。save run は minimal で、クォータは約 1 分しか使わない:
+   `build.py --set agent_mode='"direct"' --set max_model_len=131072 --set max_num_seqs=16 --set save_mode='"minimal"'`
+   save run が COMPLETE になったらすぐ提出する（`kaggle competitions submit ... -v <ver>`。watch_submit_hybrid.sh は smoke の目印を確かめるので使わない）。根拠: 統合は NVARC top1 を必ず残す。direct の部分が失敗しても、NVARC の答えがそのまま残る（テストで確認済み）。direct の配線は Mac の Qwen で確認済み（8/8、21/40）。
+- **11/1（日）**: 評価 direct の結果を見て決める。direct の correct が REPL の baseline より明らかに高い（+10 以上）なら、direct の比率が高い構成（例: nvarc_hours 6、shortest-first で NVARC が処理できないタスクは direct に回す）を、最終 2 本の「系統の違う方」の候補として提出する。高くなければ、v7 の複製にする。
+- **11/2（月）**: 20:00 UTC までに最良の構成を提出し、最終 2 本をルールで選んでユーザーに報告する。
+- 今後の提出の save run は、すべて save_mode minimal にする（smoke は評価カーネルで代わりに行う）。

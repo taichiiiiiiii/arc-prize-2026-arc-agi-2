@@ -395,6 +395,12 @@ def start_server_ladder(cfg, state, agent_end):
 def main(cfg):
     start = float((WORK / "start_epoch.txt").read_text())
     rerun = os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "").strip().lower() in {"1", "true"}
+    if not rerun and cfg.get("save_mode") == "minimal":
+        # The save run only has to produce a valid submission.json (the fallback cell already
+        # did); the real work runs in the competition rerun, which does not bill GPU quota.
+        # The same code path is exercised beforehand by the agent-eval kernel.
+        log("save_mode=minimal: not a competition rerun, skipping all phases")
+        return
     split = cfg.get("mode") == "split"          # NVARC on GPUs 0,1 || vLLM TP2 on GPUs 2,3
     hard_end = start + 12 * 3600 - cfg.get("reserve_s", 30 * 60)
     chal_path = challenges_path(rerun)

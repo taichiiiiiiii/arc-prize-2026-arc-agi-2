@@ -62,6 +62,9 @@ CONFIG = {
     # direct-answer mode (agent_mode "direct"): long xhigh reasoning, grids written by the model.
     # Needs max_model_len 131072 and max_num_seqs ~16 (madarshbb direct-b98k-c16 settings).
     "agent_mode": "repl",
+    # "minimal": the save run skips everything (about a minute of GPU quota); "smoke" runs the
+    # short evaluation smoke test (about 2 h of quota).
+    "save_mode": "smoke",
     "direct_samples": 2, "direct_concurrency": 16, "direct_max_tokens": 106496,
     "direct_thinking_budget": 98304, "direct_temperature": 1.0,
     "direct_template_kwargs": {"reasoning_effort": "xhigh"}, "rescue_tokens": 8192,
