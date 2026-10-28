@@ -331,7 +331,7 @@ def test_local_eval_harness_runs_end_to_end(tmp_path, monkeypatch):
                     "tool_calls": [{"id": "s", "name": "submit", "arguments": {"code": FLIP}}],
                     "prompt_tokens": 1, "completion_tokens": 1}
 
-    monkeypatch.setattr(le, "ChatClient", Solver)
+    monkeypatch.setattr(le, "RetryingClient", Solver)
     monkeypatch.setattr(le, "ROOT", tmp_path)
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "arc-agi_evaluation_challenges.json").write_text(json.dumps({"t1": TASK, "t2": TASK}))
