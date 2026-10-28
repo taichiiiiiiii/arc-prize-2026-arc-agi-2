@@ -337,7 +337,7 @@ def test_local_eval_harness_runs_end_to_end(tmp_path, monkeypatch):
     (tmp_path / "data" / "arc-agi_evaluation_challenges.json").write_text(json.dumps({"t1": TASK, "t2": TASK}))
     (tmp_path / "data" / "arc-agi_evaluation_solutions.json").write_text(
         json.dumps({"t1": [[[5, 4]]], "t2": [[[0]]]}))
-    monkeypatch.setattr(sys, "argv", ["local_eval.py", "--name", "x", "--tasks", "2", "--hours", "0.01"])
+    monkeypatch.setattr(sys, "argv", ["local_eval.py", "--name", "x", "--tasks", "2", "--hours", "0.01", "--split", "evaluation"])
     le.main()
     s = json.loads((tmp_path / "work" / "local_eval" / "x.json").read_text())["summary"]
     assert (s["tasks"], s["verified"], s["correct"], s["false_verified"]) == (2, 2, 1, 1)
