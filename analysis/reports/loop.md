@@ -59,5 +59,11 @@
 
 ## ローカル評価ループ（GPU なしの間の (A) の代わり）
 - 毎周、`work/local_eval/runs.jsonl` の新しい行を ledger の「ローカル評価」に転記し、事前登録したローカルの判定ルールで判定する。
-- キュー（`work/local_eval/queue.txt`）が空になりそうなら、候補を 1 つ足す。1 行 1 run で、`<name> --set key=json`。キューの実行プロセスが止まっていたら、terminal の background で `scripts/local_eval_queue.sh` を立ち上げ直す。同時に 2 つは動かさない。
+- **10/28 以降、REPL エージェントのローカル比較キューは止めている（優先度を下げた）。キューを立ち上げ直さないこと。** 理由: 上位は直接回答（direct）方式で、REPL の細かい設定より direct への切り替えのほうが効果が大きい（research 追補を参照）。
+- （以前の手順）キュー（`work/local_eval/queue.txt`）が空になりそうなら、候補を 1 つ足す。1 行 1 run で、`<name> --set key=json`。キューの実行プロセスが止まっていたら、terminal の background で `scripts/local_eval_queue.sh` を立ち上げ直す。同時に 2 つは動かさない。
 - 有望な候補は、10/31 のクォータのリセット後に Kaggle の評価カーネルで確かめる候補の先頭に入れる。
+
+## direct 方式（10/28 実装、最優先）
+- `notebooks/hybrid_v1/src/direct.py` と、hybrid の `agent_mode: "direct"`。NVARC の後の残り時間で、Qwen3.8 に xhigh で直接グリッドを書かせる（1 タスク 2 サンプル、NVARC の確信度が低いタスクから）。統合のルール: NVARC top1 は必ず残す。2 つ目は、direct が一致していれば（2 サンプルが同じか、NVARC top2 と同じ）direct、NVARC が自信あり（conf ≥ 0.75）なら NVARC top2、それ以外は direct。
+- direct では max_model_len 131072、max_num_seqs 16（madarshbb の direct-b98k-c16 と同じ値）。
+- 10/31 のクォータのリセット後の最初の評価は、評価カーネル（`--set agent_eval_h=2.0 --set agent_mode='"direct"' --set max_model_len=131072 --set max_num_seqs=16`）で行う。REPL の baseline（correct 6）と比べる。

@@ -1,6 +1,7 @@
 """Local checks of the hybrid kernel's merge logic and the REPL agent loop (no GPU, fake LLM)."""
 import json
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -341,3 +342,80 @@ def test_local_eval_harness_runs_end_to_end(tmp_path, monkeypatch):
     le.main()
     s = json.loads((tmp_path / "work" / "local_eval" / "x.json").read_text())["summary"]
     assert (s["tasks"], s["verified"], s["correct"], s["false_verified"]) == (2, 2, 1, 1)
+
+
+def test_direct_parse_grids_takes_last_blocks():
+    from direct import parse_grids
+    text = "think\n```grid\n12\n34\n```\nfinal:\n```grid\n5 6\n7 8\n```\n```\n9\n```"
+    assert parse_grids(text, 2) == [[[5, 6], [7, 8]], [[9]]]
+    assert parse_grids("no grid here", 1) is None
+
+
+def test_merge_with_direct_answers():
+    t = {"train": TASK["train"], "test": [{"input": [[1]]}]}
+    nv = [{"attempt_1": [[1]], "attempt_2": [[2]]}]
+    d = lambda g: {"grids": [g]}
+    # two direct samples agree -> they replace NVARC top2
+    r = hybrid.merge_task(t, nv, None, [d([[7]]), d([[7]])], {0: 0.9})
+    assert (r[0]["attempt_1"], r[0]["attempt_2"]) == ([[1]], [[7]])
+    # one direct sample, NVARC confident -> keep NVARC top2
+    r = hybrid.merge_task(t, nv, None, [d([[7]])], {0: 0.9})
+    assert r[0]["attempt_2"] == [[2]]
+    # one direct sample, NVARC unsure -> direct answer
+    r = hybrid.merge_task(t, nv, None, [d([[7]])], {0: 0.1})
+    assert r[0]["attempt_2"] == [[7]]
+    # NVARC missing -> both direct samples
+    empty = [{"attempt_1": [[0]], "attempt_2": [[0]]}]
+    r = hybrid.merge_task(t, empty, None, [d([[7]]), d([[8]])], None)
+    assert {repr(r[0]["attempt_1"]), repr(r[0]["attempt_2"])} == {"[[7]]", "[[8]]"}
+    # REPL-verified still first
+    r = hybrid.merge_task(t, nv, [([[[5]]], [])], [d([[7]]), d([[7]])], {0: 0.1})
+    assert (r[0]["attempt_1"], r[0]["attempt_2"]) == ([[5]], [[1]])
+
+
+def test_run_direct_sample_major_with_rescue():
+    from direct import run_direct
+
+    class Fake:
+        max_tokens = 1000
+
+        def __init__(self):
+            self.calls = []
+
+        def chat(self, messages, seed=None, max_tokens=None, timeout=None, template_kwargs=None, **kw):
+            self.calls.append((seed, template_kwargs))
+            if template_kwargs:                      # rescue call: answer
+                return {"content": "```grid\n54\n```", "reasoning": "", "finish_reason": "stop",
+                        "completion_tokens": 3, "prompt_tokens": 1}
+            if seed == 7:                             # sample 0: cut off, no grid
+                return {"content": "", "reasoning": "hmm " * 10, "finish_reason": "length",
+                        "completion_tokens": 9, "prompt_tokens": 1}
+            return {"content": "```grid\n54\n```", "reasoning": "", "finish_reason": "stop",
+                    "completion_tokens": 5, "prompt_tokens": 1}
+
+    c = Fake()
+    res = run_direct(c, {"t1": TASK}, ["t1"], deadline=time.time() + 600, samples=2, concurrency=1,
+                     log=lambda *a: None)
+    st = sorted(r["status"] for r in res["t1"])
+    assert st == ["answered", "rescued"]
+    assert all(r["grids"] == [[[5, 4]]] for r in res["t1"])
+
+
+def test_main_direct_mode_merges_direct_answers(tmp_path, monkeypatch):
+    calls = {}
+
+    def fake_direct(cfg, tasks, order, nv_sub, conf_of, deadline, direct):
+        calls["order"] = order
+        direct["t2"] = [{"grids": [[[9]]]}, {"grids": [[[9]]]}]
+    real_setattr = monkeypatch.setattr
+    real_setattr(hybrid, "run_direct_phase", fake_direct)
+
+    def guarded(target, name, value=None, *rest):
+        if target is hybrid and name == "run_direct_phase":
+            return None
+        return real_setattr(target, name, value, *rest)
+    monkeypatch.setattr = guarded
+    sub, seen = _fake_main_env(tmp_path, monkeypatch, False, agent_mode="direct")
+    assert "order" not in seen and calls["order"] == ["t2", "t1"]   # REPL agent not used
+    assert sub["t2"] == [{"attempt_1": [[3]], "attempt_2": [[9]]}]    # agreeing direct answer
+    assert sub["t1"] == [{"attempt_1": [[1]], "attempt_2": [[2]]}]

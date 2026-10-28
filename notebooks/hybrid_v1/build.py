@@ -10,7 +10,7 @@ HERE = Path(__file__).resolve().parent
 SRC = HERE / "src"
 FILES = ["arc_loader.py", "arc_decoder.py", "arc_solver.py", "starter.py",
          "grids.py", "sandbox.py", "backend.py", "agent.py", "repl.py", "client.py",
-         "repl_agent.py", "hybrid.py"]
+         "repl_agent.py", "direct.py", "hybrid.py"]
 
 ATTN_ENV = {"VLLM_FORCE_ATTN_BACKEND": "TRITON_ATTN"}
 REASON = ["--reasoning-config", json.dumps({"reasoning_start_str": "<think>",
@@ -59,6 +59,12 @@ CONFIG = {
     "template_kwargs": {"reasoning_effort": "xhigh"},
     "temperature": 0.6, "top_p": 0.95, "top_k": 20,
     "tok_per_s": 800, "min_cap": 15000, "max_cap": 50000,
+    # direct-answer mode (agent_mode "direct"): long xhigh reasoning, grids written by the model.
+    # Needs max_model_len 131072 and max_num_seqs ~16 (madarshbb direct-b98k-c16 settings).
+    "agent_mode": "repl",
+    "direct_samples": 2, "direct_concurrency": 16, "direct_max_tokens": 106496,
+    "direct_thinking_budget": 98304, "direct_temperature": 1.0,
+    "direct_template_kwargs": {"reasoning_effort": "xhigh"}, "rescue_tokens": 8192,
     # save-run smoke test on evaluation tasks
     "smoke_tasks": ["e8686506", "20270e3b", "28a6681f", "dbff022c",
                     "7b5033c1", "78332cb0", "36a08778", "aa4ec2a5"],
