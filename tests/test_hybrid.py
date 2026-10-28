@@ -432,3 +432,14 @@ def test_minimal_save_mode_skips_everything(tmp_path, monkeypatch):
     monkeypatch.delenv("KAGGLE_IS_COMPETITION_RERUN", raising=False)
     hybrid.main({"save_mode": "minimal"})
     assert called == {}
+
+
+def test_direct_plan_skips_confident_and_sizes_cap():
+    conf = {"a": {0: 0.9}, "b": {0: 0.2}, "c": {0: 0.1, 1: 0.95}}
+    cfg = {"direct_tok_per_s": 100, "direct_min_tokens": 1000, "direct_max_tokens": 50000}
+    todo, cap = hybrid.direct_plan(cfg, ["a", "b", "c"], conf.get, 600, True)
+    assert todo == ["b", "c"] and cap == 30000            # 100 tok/s * 600 s / 2 tasks
+    todo, cap = hybrid.direct_plan(cfg, ["a", "b", "c"], conf.get, 600, False)
+    assert todo == ["a", "b", "c"] and cap == 20000        # no NVARC: every task
+    _, cap = hybrid.direct_plan(cfg, ["a", "b", "c"], conf.get, 1, True)
+    assert cap == 1000                                     # clamped to the minimum

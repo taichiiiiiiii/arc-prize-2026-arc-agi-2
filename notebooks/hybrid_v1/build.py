@@ -68,6 +68,9 @@ CONFIG = {
     "direct_samples": 2, "direct_concurrency": 16, "direct_max_tokens": 106496,
     "direct_thinking_budget": 98304, "direct_temperature": 1.0,
     "direct_template_kwargs": {"reasoning_effort": "xhigh"}, "rescue_tokens": 8192,
+    # per-sample cap = direct_tok_per_s * time left / tasks to do, clamped to [min, max];
+    # tasks with NVARC conf >= direct_skip_conf get no direct samples.
+    "direct_tok_per_s": 350, "direct_min_tokens": 16384, "direct_skip_conf": 0.75,
     # save-run smoke test on evaluation tasks
     "smoke_tasks": ["e8686506", "20270e3b", "28a6681f", "dbff022c",
                     "7b5033c1", "78332cb0", "36a08778", "aa4ec2a5"],

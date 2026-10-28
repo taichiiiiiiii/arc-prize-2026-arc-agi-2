@@ -284,18 +284,37 @@ def merge_task(task, nv_rows, agent_rows, direct_recs=None, nv_conf=None, conf_h
     return rows
 
 
+def direct_plan(cfg, order, conf_of, avail_s, has_nvarc):
+    """Which tasks get direct samples, and the per-sample token cap.
+
+    Tasks NVARC is confident about are skipped: the merge keeps NVARC top2 there unless the
+    direct samples agree, so their tokens are better spent elsewhere. The cap is sized so the
+    first sample of every remaining task fits in the time left (sample-major order), between
+    direct_min_tokens and direct_max_tokens."""
+    hi = cfg.get("direct_skip_conf", cfg.get("confident_nvarc", 0.75))
+    todo = [t for t in order if not has_nvarc or min(conf_of(t).values() or [0.0]) < hi]
+    budget = cfg.get("direct_tok_per_s", 450) * avail_s
+    cap = int(min(cfg.get("direct_max_tokens", 106496),
+                  max(cfg.get("direct_min_tokens", 16384), budget / max(len(todo), 1))))
+    return todo, cap
+
+
 def run_direct_phase(cfg, tasks, order, nv_sub, nv_conf_of, deadline, direct):
     sys.path.insert(0, str(HERE))
     from client import ChatClient
     from direct import run_direct
-    client = ChatClient("http://127.0.0.1:1234/v1", "qwen", max_tokens=cfg.get("direct_max_tokens", 106496),
+    has_nvarc = any(r["attempt_1"] != [[0]] for t in order for r in nv_sub[t])
+    order, cap = direct_plan(cfg, order, nv_conf_of, max(0.0, deadline - time.time()), has_nvarc)
+    client = ChatClient("http://127.0.0.1:1234/v1", "qwen", max_tokens=cap,
                         temperature=cfg.get("direct_temperature", 1.0), top_p=cfg.get("top_p", 0.95),
                         top_k=cfg.get("top_k", 20), thinking=True,
-                        thinking_token_budget=cfg.get("direct_thinking_budget", 98304),
+                        thinking_token_budget=max(4096, min(cfg.get("direct_thinking_budget", 98304),
+                                                            cap - 8192)),
                         template_kwargs=cfg.get("direct_template_kwargs", {"reasoning_effort": "xhigh"}),
                         timeout=4 * 3600)
     log(f"direct: {len(order)} tasks, {(deadline - time.time()) / 3600:.2f} h, "
-        f"samples {cfg.get('direct_samples', 2)}, concurrency {cfg.get('direct_concurrency', 16)}")
+        f"samples {cfg.get('direct_samples', 2)}, concurrency {cfg.get('direct_concurrency', 16)}, "
+        f"per-sample cap {cap} tokens")
     lock = threading.Lock()
     sub = json.load(open(SUB))
     dlog = open(WORK / "direct_attempts.jsonl", "a")
