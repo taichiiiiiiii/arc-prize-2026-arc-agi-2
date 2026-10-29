@@ -1,6 +1,6 @@
 """Fetch only a kernel's log (one API call; the CLI pages through every output file -> 429).
 
-    python3.14 scripts/fetch_log.py <owner>/<slug> <out.log>
+    <python with the kaggle package> scripts/fetch_log.py <owner>/<slug> <out.log>
 Prints the [hybrid ...] lines and errors.
 """
 import json

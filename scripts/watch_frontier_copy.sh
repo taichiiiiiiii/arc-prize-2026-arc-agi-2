@@ -4,7 +4,7 @@ set -u
 K=taichiiiii/arc2-frontier-copy-3389
 C=arc-prize-2026-arc-agi-2
 MSG="frontier copy koushikrudra/failed-in-aimo V1 (33.89) + model mount path fix, v2"
-OUT=/Users/<user>/.hermes/profiles/arc2/cache/scratch/fc_out
+OUT=${ARC2_SCRATCH:-$(cd "$(dirname "$0")/.." && pwd)/work/scratch}/fc_out
 for i in $(seq 1 120); do
   s=$(kaggle kernels status $K 2>&1 | grep -v Warning)
   echo "$(date -u +%H:%M) $s"

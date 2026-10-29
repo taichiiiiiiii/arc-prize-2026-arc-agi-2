@@ -1,0 +1,36 @@
+arc-prize-2026-arc-agi-2
+Copyright 2026 taichiiiiiiii
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It includes or adapts code from the following works. Public Kaggle notebooks are released
+under the Apache License 2.0 (Kaggle notebook terms; code shared publicly in this competition
+is also licensed under an OSI-approved license per the competition rules, section 6.b).
+
+1. NVARC pipeline (test-time training of a 4B grid model + augmented DFS decoding)
+   - koushikrudra/failed-in-aimo (Kaggle notebook, Apache 2.0)
+     https://www.kaggle.com/code/koushikrudra/failed-in-aimo
+   - itself based on NVARC, 1st place of ARC Prize 2025 (I. Sorokin, J.-F. Puget)
+     https://github.com/1ytic/NVARC
+   Used in: notebooks/frontier_copy_3389/ (verbatim copy plus a model-path fix),
+   notebooks/hybrid_v1/src/arc_loader.py, arc_decoder.py, arc_solver.py, starter.py
+
+2. Qwen3.8-27B REPL agent and direct-answer runner
+   - madarshbb/arc-qwen-3-8-27b-agent (Kaggle notebook, Apache 2.0)
+     https://www.kaggle.com/code/madarshbb/arc-qwen-3-8-27b-agent
+   - madarshbb/arc-agent-sub-q38-direct-b98k-c16-792ef9 (Kaggle notebook, Apache 2.0)
+     https://www.kaggle.com/code/madarshbb/arc-agent-sub-q38-direct-b98k-c16-792ef9
+   - modelled on The Duck harness by Tufa Labs (ARC-AGI-3 Milestone 1)
+     https://github.com/Tufalabs/duck-harness
+   Used in: notebooks/hybrid_v1/src/grids.py, sandbox.py, backend.py, agent.py, repl.py,
+   client.py, repl_agent.py, direct.py
+
+Models and runtimes used at inference (not redistributed here; attached on Kaggle):
+   - sorokin/qwen3_4b_grids15_sft139 (Kaggle Models)
+   - foysalemonshanto/qwen3-8-27b-fp8-repacked-v1 (Kaggle Models; Qwen3.8-27B FP8, Qwen license)
+   - vLLM wheelhouse and serving overlay: mirzamilanfarabi/arc3-vllm-h100-wheelhouse-v3,
+     keithtyser/taaf-duck-qwen38-serving-v1 (Kaggle Datasets)
+   - CPython 3.12 (python-build-standalone) via destinyfire1/arc3-cpython312-runtime
+
+Competition data (ARC-AGI-2) is NOT included in this repository (competition rule 2.4.b).
+Download it with scripts/download_data.sh after accepting the competition rules.
