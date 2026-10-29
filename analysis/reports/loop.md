@@ -14,7 +14,7 @@
    - 1 回あたり GPU クォータを約 5h 使う。週の残りが 8h を切ったら評価を止め、提出用の smoke にクォータを残す。
 4. **採用の判定**（事前登録、変えない）: 候補が baseline に比べて **correct が +5 タスク以上**、かつ **false_verified が増えていない**なら採用する。それ以外は不採用。不採用でも、仕組み上の理由が分かったら ledger に書く。
 5. **(B) 提出**: その日の UTC の枠が未使用なら、「現在の本番構成」に、採用済みのエージェント変更を反映して `arc2-hybrid-v1` に push する（`build.py --id taichiiiii/arc2-hybrid-v1`、CONFIG を直接編集してコミット）。続けて `scripts/watch_submit_hybrid.sh taichiiiii/arc2-hybrid-v1 <version> "<message>"` を background と persist_on_release で起動する。前回の提出から本番構成が変わっていなければ、同じ構成を別シードで出してよい（最終 2 本のぶれを測るため）。ただし同じ構成を 3 本以上は出さない。
-6. **ledger に追記して commit・push する**: 作業ブランチ `feat/research-frontier-copy`。新しい落とし穴や手順が分かったら、スキル `arc-agi-2-repo` に追記する。
+6. **ledger に追記して commit・push する**: AGENTS.md の「Git 運用」に従う（作業ごとに Issue・ブランチ・PR、`scripts/ci_local.sh` で tests を通してからマージ。ledger だけの追記は `docs/1-ledger-YYYYMMDD`）。新しい落とし穴や手順が分かったら、スキル `arc-agi-2-repo` に追記する。
 7. **報告**: 日本語で 5 行以内。新しいスコアや評価結果、判定、次に回すもの。
 
 ## 制約
