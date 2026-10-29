@@ -7,7 +7,8 @@ set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 Q=$ROOT/work/local_eval/queue.txt
 DONE=$ROOT/work/local_eval/done.txt
-MLX=/Users/taichi/.hermes/profiles/arc2/cache/mlx
+# MLX venv + models (mlx-lm installed; models/<name>/ downloaded with `hf download`)
+MLX=${ARC2_MLX_DIR:-$ROOT/work/mlx}
 MODEL=${LOCAL_EVAL_MODEL:-$MLX/models/Qwen3.5-9B-MLX-4bit}
 mkdir -p "$ROOT/work/local_eval"; touch "$Q" "$DONE"
 if ! curl -s -o /dev/null http://127.0.0.1:8765/v1/models; then

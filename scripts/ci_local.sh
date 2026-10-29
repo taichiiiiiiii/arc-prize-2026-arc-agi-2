@@ -5,7 +5,7 @@
 #   scripts/ci_local.sh <pr-number>
 set -eu
 PR=$1
-REPO=taichiiiiiiii/arc-prize-2026-arc-agi-2
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 # the PR head straight from git (gh pr view can lag a just-pushed commit)
 BR=$(gh pr view "$PR" --json headRefName -q .headRefName)
 SHA=$(git ls-remote origin "refs/heads/$BR" | cut -f1)

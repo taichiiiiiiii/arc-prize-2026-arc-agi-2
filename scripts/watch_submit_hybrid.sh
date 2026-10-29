@@ -5,9 +5,11 @@
 set -u
 K=$1; V=$2; MSG=$3
 C=arc-prize-2026-arc-agi-2
-PY=/Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14
+# a Python that has the `kaggle` package (the one the kaggle CLI runs on)
+PY=${KAGGLE_PY:-$(head -1 "$(command -v kaggle)" | sed "s/^#!//")}
 HERE=$(cd "$(dirname "$0")" && pwd)
-LOG=/Users/taichi/.hermes/profiles/arc2/cache/scratch/$(basename $K)-v$V.log
+LOG=${ARC2_SCRATCH:-$(cd "$(dirname "$0")/.." && pwd)/work/scratch}/$(basename $K)-v$V.log
+mkdir -p "$(dirname "$LOG")"
 subs() { kaggle competitions submissions $C --page-size 30 --csv 2>&1 | grep -v Warning; }
 for i in $(seq 1 60); do
   s=$(kaggle kernels status $K 2>&1 | grep -v Warning)
