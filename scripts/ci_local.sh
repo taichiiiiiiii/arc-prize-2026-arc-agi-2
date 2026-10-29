@@ -6,7 +6,9 @@
 set -eu
 PR=$1
 REPO=taichiiiiiiii/arc-prize-2026-arc-agi-2
-SHA=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
+# the PR head straight from git (gh pr view can lag a just-pushed commit)
+BR=$(gh pr view "$PR" --json headRefName -q .headRefName)
+SHA=$(git ls-remote origin "refs/heads/$BR" | cut -f1)
 DIR=$(mktemp -d "${TMPDIR:-/tmp}/ci-XXXXXX")
 trap 'git worktree remove --force "$DIR" >/dev/null 2>&1 || true' EXIT
 git fetch -q origin
