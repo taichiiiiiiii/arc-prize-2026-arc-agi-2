@@ -1,9 +1,11 @@
 name: tests
 
+# Actions is blocked by account billing (2026-10-29): until that is fixed this runs only on
+# demand, and scripts/ci_local.sh posts the `tests` status instead. To re-enable, restore:
+#   push: {branches: [develop, main]}
+#   pull_request:
 on:
-  push:
-    branches: [develop, main]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   tests:
