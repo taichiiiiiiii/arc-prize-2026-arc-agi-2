@@ -11,7 +11,7 @@
   - コード・コメント・コミットメッセージは英語。README は英語の概要と日本語の詳細を並べる。
 - `~/.kaggle/` の認証情報は読まない・表示しない・送信しない。
 - `kaggle kernels push` と `kaggle competitions submit` は、その操作ごとにユーザーの明示的な承認を得てから親エージェントだけが行う。**提出は 1 日 1 回まで**なので、同じ日に 2 回目は送らない。
-- 読み取り専用の Kaggle API（files / submissions / leaderboard / kernels list・pull・status・output / topics）は承認なしで使ってよい。認証エラーが出たら再試行せずにユーザーへ報告する。
+- 読み取り専用の Kaggle API（files / submissions / leaderboard / kernels list・pull・status・output / topics）は承認なしで使ってよい。認証エラーが出たら `kaggle auth login`（ブラウザの OAuth）を実行してよい（オーナーが 2026-10-30 に許可）。完了しなければユーザーへ報告する。
 - 提出ノートブックは private にし、インターネットを無効にする。外部データとモデルは、無料で公開されていてオープンソースライセンスのものに限る（入賞時は CC BY 4.0 で公開する義務がある）。
 - このマシン (M4 Pro / 48 GB) はユーザーの Docker や他の学習ジョブと共有している。重い処理の前に `memory_pressure` を確認し、他プロジェクトのプロセスには触れない。
 

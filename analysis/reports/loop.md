@@ -4,7 +4,7 @@
 ループは 2 本立て: **(A) エージェント評価ループ**（evaluation 120 タスクでエージェントの変更を 1 つずつ測る）と、**(B) 提出ループ**（評価を通った構成だけを本番に入れ、1 日 1 本提出する）。
 
 ## 毎周の手順
-1. **状態を読む**: `analysis/experiment_ledger.md` の末尾（特に「エージェント評価」表）、`kaggle competitions submissions arc-prize-2026-arc-agi-2 --page-size 20`、`kaggle kernels status taichiiiii/arc2-agent-eval`、`kaggle kernels status taichiiiii/arc2-hybrid-v1`、`date -u`、`ps aux | grep -E 'watch_submit' | grep -v grep`。認証エラーが出たら何もせず、`kaggle auth login` の依頼だけを報告する。
+1. **状態を読む**: `analysis/experiment_ledger.md` の末尾（特に「エージェント評価」表）、`kaggle competitions submissions arc-prize-2026-arc-agi-2 --page-size 20`、`kaggle kernels status taichiiiii/arc2-agent-eval`、`kaggle kernels status taichiiiii/arc2-hybrid-v1`、`date -u`、`ps aux | grep -E 'watch_submit' | grep -v grep`。認証エラーが出たら、`kaggle auth login` を terminal の background（notify_on_complete）で実行する（オーナーが 10/30 に許可。ブラウザの OAuth で、オーナーの Chrome でログインが完了する）。完了しなければ、オーナーに再認証を依頼する。認証情報のファイルは読まない。
 2. **新しい結果を記録する**:
    - Public スコア: まだ ledger にないものを追記し、事前登録した判定ルールで判定する。
    - エージェント評価: `arc2-agent-eval` が COMPLETE で、まだ記録していない version があれば、`scripts/fetch_log.py taichiiiii/arc2-agent-eval <out>` でログを取り、`EVAL {...}` の行（attempted / verified / correct / false_verified / outputs）を ledger の「エージェント評価」表に追記する。
