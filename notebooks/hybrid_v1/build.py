@@ -34,8 +34,8 @@ CONFIG = {
         {"args": REASON},
         {"args": []},
     ],
-    "max_model_len": 131072,  # direct needs long reasoning (v7)
-    "max_num_seqs": 16,
+    "max_model_len": 40960,  # v8: back to the v6 REPL setting (direct needs 131072 / 16 seqs)
+    "max_num_seqs": 32,
     "server_start_s": 1500,
     "nvarc_hours": 10.5,
     "agent_reserve_h": 1.0,   # S2 (NVARC 7h) 24.44 < S1 (NVARC-only) 27.36: NVARC first, agent gets leftovers
@@ -61,7 +61,9 @@ CONFIG = {
     "tok_per_s": 800, "min_cap": 15000, "max_cap": 50000,
     # direct-answer mode (agent_mode "direct"): long xhigh reasoning, grids written by the model.
     # Needs max_model_len 131072 and max_num_seqs ~16 (madarshbb direct-b98k-c16 settings).
-    "agent_mode": "direct",  # v7: REPL 6/120 on eval; top public runs answer directly
+    # v8: "repl". direct in the leftover window scored 2/120 on eval (cap ~20k tokens/sample),
+    # below REPL 6/120; REPL only overrides NVARC with train-verified answers.
+    "agent_mode": "repl",
     # "minimal": the save run skips everything (about a minute of GPU quota); "smoke" runs the
     # short evaluation smoke test (about 2 h of quota).
     "save_mode": "minimal",
