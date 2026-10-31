@@ -34,8 +34,8 @@ CONFIG = {
         {"args": REASON},
         {"args": []},
     ],
-    "max_model_len": 40960,
-    "max_num_seqs": 32,
+    "max_model_len": 131072,  # direct needs long reasoning (v7)
+    "max_num_seqs": 16,
     "server_start_s": 1500,
     "nvarc_hours": 10.5,
     "agent_reserve_h": 1.0,   # S2 (NVARC 7h) 24.44 < S1 (NVARC-only) 27.36: NVARC first, agent gets leftovers
@@ -61,10 +61,10 @@ CONFIG = {
     "tok_per_s": 800, "min_cap": 15000, "max_cap": 50000,
     # direct-answer mode (agent_mode "direct"): long xhigh reasoning, grids written by the model.
     # Needs max_model_len 131072 and max_num_seqs ~16 (madarshbb direct-b98k-c16 settings).
-    "agent_mode": "repl",
+    "agent_mode": "direct",  # v7: REPL 6/120 on eval; top public runs answer directly
     # "minimal": the save run skips everything (about a minute of GPU quota); "smoke" runs the
     # short evaluation smoke test (about 2 h of quota).
-    "save_mode": "smoke",
+    "save_mode": "minimal",
     "direct_samples": 2, "direct_concurrency": 16, "direct_max_tokens": 106496,
     "direct_thinking_budget": 98304, "direct_temperature": 1.0,
     "direct_template_kwargs": {"reasoning_effort": "xhigh"}, "rescue_tokens": 8192,
