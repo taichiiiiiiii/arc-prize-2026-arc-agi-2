@@ -176,3 +176,8 @@
 - v7 の save run は 01:24 UTC に COMPLETE（QUEUED で約 50 分待ち）。背景スクリプトが 10/31 UTC の枠で **v7 を提出（57822732、PENDING）**し、続けて **評価 direct（arc2-agent-eval version 3、Issue #11）を push**（QUEUED）。10/31 の枠は使用済み。
 - 判定は事前登録どおり（v7 ≥ 32.3 で改善、26.3〜32.3 は同等、26.3 未満なら 11/1 は v6 構成に戻す）。評価 direct の EVAL が出たら、REPL の評価（correct 6/120）と比べ、cut 数と rescue の正解率から direct_plan の上限を見直す。
 - うまくいかなかったこと: なし。
+
+## 2026-10-31 02:45 UTC ループ（評価 direct が空振り、修正して再 push）
+- **評価 direct（arc2-agent-eval v3）は何もせずに終わった**: ログは `save_mode=minimal: not a competition rerun, skipping all phases` だけ（約 1 分、クォータへの影響はほぼなし）。build.py の CONFIG の既定を save_mode minimal にしたため、agent_eval_h を指定した評価ビルドにも minimal が効いた。v7 の提出（rerun）には影響しない。
+- 修正（Issue #15）: agent_eval_h があるときは minimal を無視する。テストを追加し、31 件通過。マージ後の develop から評価 direct を再 push する。
+- うまくいかなかったこと: 既定値の変更が評価カーネルにも効くことを、push 前に確かめていなかった。評価の push 後は、10 分後にログで `rerun=False ... tasks=120` の行が出ていることを確かめる（loop.md の自己チェックに追加）。

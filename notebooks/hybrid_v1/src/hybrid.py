@@ -414,7 +414,8 @@ def start_server_ladder(cfg, state, agent_end):
 def main(cfg):
     start = float((WORK / "start_epoch.txt").read_text())
     rerun = os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "").strip().lower() in {"1", "true"}
-    if not rerun and cfg.get("save_mode") == "minimal":
+    # agent-eval kernels are save runs too, but they must do their work (eval ignores minimal).
+    if not rerun and cfg.get("save_mode") == "minimal" and not cfg.get("agent_eval_h"):
         # The save run only has to produce a valid submission.json (the fallback cell already
         # did); the real work runs in the competition rerun, which does not bill GPU quota.
         # The same code path is exercised beforehand by the agent-eval kernel.
