@@ -195,3 +195,10 @@
 - **v8 を push**（arc2-hybrid-v1 version 8、develop d9f5234、PR #20 / Issue #19）: 10/31 05:50 の事前登録どおり、v7 から「エージェントの方式」だけを REPL に戻す（agent_mode repl、max_model_len 40960、max_num_seqs 32。強制 submit の修正 2 件入り）。save_mode minimal。
 - 提出: 10/31 の枠は v7 で使用済み。11/1 00:00 UTC 以降の周で、v7（57822732）が 32.3 以上なら v7 の複製、それ以外は v8 を提出する（事前登録どおり）。評価 v5 がエージェントの配線の失敗（attempted が極端に少ない、例外で停止）を示した場合は、v8 を出さず v6 の複製にする。
 - うまくいかなかったこと: 実行中のカーネルのログが fetch_log.py で取れない（0 バイト）。loop.md の「10 分後に `tasks=120` を確かめる」は、RUNNING が数分以上続くこと（minimal なら約 1 分で COMPLETE）で代用する。
+
+## 2026-10-31 09:05 UTC ループ（評価 REPL+修正の結果）
+- **評価 REPL+修正（arc2-agent-eval v5、#17）: attempted 120、verified 4、correct 2（3/172 出力）、false_verified 2**。baseline（評価 v1、修正前）は correct 6、false_verified 1。ログに `rerun=False ... tasks=120` があり、空振りではない。vllm-server.log に Traceback は 0 件で、強制 submit の HTTP 500 は消えた（修正の配線は動いている）。
+- 終わり方: 締め切りで stopped 83、token budget で failed 33（v1 で 5 ターン目の 500 だった経路が、強制 submit の後も解けずに token 上限で終わる形に変わった）。verified 4 件のうち 3 件は forced=1。2h 終了時も Running 21、約 460 tok/s。
+- **判定（事前登録の採用ルール: correct +5 以上かつ false_verified が増えない）**: 不採用。修正は HTTP 500 を消したが、正解は増えず（-4、件数が少なくノイズの範囲）、false_verified は 1 → 2。
+- **11/1 の提出**: 07:20 の事前登録（評価 v5 が配線の失敗を示したときだけ v6 の複製）に従い、配線は動いているので **v8 を提出**する（v7 が 32.3 以上なら v7 の複製）。ただし評価で改善が示されていないので、v8 は v6 系と「同等」の候補として扱い、Public が 32.3 以上でない限り最終 2 本の Public 最良の枠には v6 を残す。
+- うまくいかなかったこと: 強制 submit の修正は「500 が消えれば verified が増える」と見込んでいたが、強制された submit の多くは不正解で、token 上限まで続くだけだった。
