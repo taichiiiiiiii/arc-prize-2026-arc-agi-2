@@ -181,3 +181,11 @@
 - **評価 direct（arc2-agent-eval v3）は何もせずに終わった**: ログは `save_mode=minimal: not a competition rerun, skipping all phases` だけ（約 1 分、クォータへの影響はほぼなし）。build.py の CONFIG の既定を save_mode minimal にしたため、agent_eval_h を指定した評価ビルドにも minimal が効いた。v7 の提出（rerun）には影響しない。
 - 修正（Issue #15）: agent_eval_h があるときは minimal を無視する。テストを追加し、31 件通過。マージ後の develop から評価 direct を再 push する。
 - うまくいかなかったこと: 既定値の変更が評価カーネルにも効くことを、push 前に確かめていなかった。評価の push 後は、10 分後にログで `rerun=False ... tasks=120` の行が出ていることを確かめる（loop.md の自己チェックに追加）。
+
+## 2026-10-31 05:50 UTC ループ（評価 direct の結果、REPL の baseline を取り直し）
+- **評価 direct（arc2-agent-eval v4、Issue #11）: correct 2/120（2/172 出力）、attempted 108、false_verified 0**。REPL の baseline（評価 v1）は correct 6。direct_plan の 1 サンプル上限は 20670 トークン（350 tok/s × 1.97h ÷ 120）で、108 サンプル中 82 が思考途中で切れて rescue、12 が grid なし、13 が締め切りで timeout、最後まで考え切ったのは 1。2 サンプル目にはほぼ届かず。生成 221 万トークン（約 310 tok/s、同時 16）。
+- **解釈**: 27B の direct は「長く考え切る」ことが前提（公開版は 98k 思考を 12h 枠で使う）。2h 前後の残り時間を 100 タスク超で割ると 1 サンプル約 2 万トークンになり、rescue の答えはほぼ外れる。Mac の 9B（training の易しいタスク）で 4096 上限が勝った結果は、evaluation の 27B には移らなかった。→ 残り時間のエージェントとしての direct は効かない。
+- **v7（57822732、PENDING）への影響**: 本番でも残り時間は約 2.5h なので、direct はほぼ当たらない。統合は低確信度のタスクで NVARC top2 を direct に置き換えるので、v7 は v6 より少し下がる側の危険がある（大きさは NVARC top2 の正解率次第で不明）。判定は事前登録どおり v7 のスコアで行う。
+- **新ルール（11/1 の提出、スコアが出る前に登録）**: loop.md の「direct が +10 以上でなければ v7 の複製」は、direct が REPL を下回ることを想定していなかった。新ルールとして、11/1 は **v8 = v6 の CONFIG（agent_mode repl、max_model_len 40960、max_num_seqs 32）+ 強制 submit の修正 2 件**を提出する（v7 からの変更は「エージェントの方式」1 つ）。REPL の統合は verified 解しか NVARC を押しのけないので、v6 より下がる経路がない。例外: v7 が 32.3 以上なら v7 の複製にする。
+- **評価 REPL+修正（arc2-agent-eval v5、Issue #17）を push**: v6 のエージェント設定 + 強制 submit の修正。baseline v1（correct 6、false_verified 1）と比べ、v8 の配線確認も兼ねる。採用ルールは事前登録どおり（correct +5 以上かつ false_verified が増えない）。今週のクォータ使用は約 5h（評価 v4）+ arc3 分で、v5（約 5h）後も 11/1・11/2 の save run（minimal、各 1 分）に十分残る。
+- うまくいかなかったこと: 9B・training でのローカル比較（短い上限が得）を、27B・evaluation に確かめずに v7 の本番に入れた。ローカル proxy の結果は、方式の向きの参考にとどめ、量（トークン上限など）の決定には使わない。
