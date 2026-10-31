@@ -171,3 +171,8 @@
 - 判定ルール（事前登録、10/30 の新ルール）: v7 の Public が v6 平均 29.31 + 3 = **32.3 以上なら改善**。26.3〜32.3 はノイズ内で「同等」とし、仕組みで説明できる v7 を v6 と同等の候補として扱う。26.3 未満なら direct が NVARC の 2 つ目を悪化させたとみなし、11/1 は v6 構成に戻す。
 - 提出と評価: save run は QUEUED（L4×4 の空き待ち）。COMPLETE になったら背景スクリプト（`$ARC2_SCRATCH/watch_submit_v7.sh`）が 10/31 UTC の枠で 1 回だけ提出し、続けて評価 direct（arc2-agent-eval、Issue #11）を push する（同時 GPU セッション 2 の制限のため順番に）。
 - うまくいかなかったこと: なし。
+
+## 2026-10-31 01:35 UTC ループ（v7 の提出と評価 direct の push を確認）
+- v7 の save run は 01:24 UTC に COMPLETE（QUEUED で約 50 分待ち）。背景スクリプトが 10/31 UTC の枠で **v7 を提出（57822732、PENDING）**し、続けて **評価 direct（arc2-agent-eval version 3、Issue #11）を push**（QUEUED）。10/31 の枠は使用済み。
+- 判定は事前登録どおり（v7 ≥ 32.3 で改善、26.3〜32.3 は同等、26.3 未満なら 11/1 は v6 構成に戻す）。評価 direct の EVAL が出たら、REPL の評価（correct 6/120）と比べ、cut 数と rescue の正解率から direct_plan の上限を見直す。
+- うまくいかなかったこと: なし。
