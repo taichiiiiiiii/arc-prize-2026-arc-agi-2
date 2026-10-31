@@ -189,3 +189,9 @@
 - **新ルール（11/1 の提出、スコアが出る前に登録）**: loop.md の「direct が +10 以上でなければ v7 の複製」は、direct が REPL を下回ることを想定していなかった。新ルールとして、11/1 は **v8 = v6 の CONFIG（agent_mode repl、max_model_len 40960、max_num_seqs 32）+ 強制 submit の修正 2 件**を提出する（v7 からの変更は「エージェントの方式」1 つ）。REPL の統合は verified 解しか NVARC を押しのけないので、v6 より下がる経路がない。例外: v7 が 32.3 以上なら v7 の複製にする。
 - **評価 REPL+修正（arc2-agent-eval v5、Issue #17）を push**: v6 のエージェント設定 + 強制 submit の修正。baseline v1（correct 6、false_verified 1）と比べ、v8 の配線確認も兼ねる。採用ルールは事前登録どおり（correct +5 以上かつ false_verified が増えない）。今週のクォータ使用は約 5h（評価 v4）+ arc3 分で、v5（約 5h）後も 11/1・11/2 の save run（minimal、各 1 分）に十分残る。
 - うまくいかなかったこと: 9B・training でのローカル比較（短い上限が得）を、27B・evaluation に確かめずに v7 の本番に入れた。ローカル proxy の結果は、方式の向きの参考にとどめ、量（トークン上限など）の決定には使わない。
+
+## 2026-10-31 07:20 UTC ループ（評価 REPL+修正の開始を確認、v8 を push）
+- 評価 REPL+修正（arc2-agent-eval v5、#17）は QUEUED → RUNNING。開始から 10 分以上 RUNNING が続いており、minimal で 1 分で終わる空振りではない（ログは実行中は API から取れず空だった。`tasks=120` の確認は COMPLETE 後に行う）。
+- **v8 を push**（arc2-hybrid-v1 version 8、develop d9f5234、PR #20 / Issue #19）: 10/31 05:50 の事前登録どおり、v7 から「エージェントの方式」だけを REPL に戻す（agent_mode repl、max_model_len 40960、max_num_seqs 32。強制 submit の修正 2 件入り）。save_mode minimal。
+- 提出: 10/31 の枠は v7 で使用済み。11/1 00:00 UTC 以降の周で、v7（57822732）が 32.3 以上なら v7 の複製、それ以外は v8 を提出する（事前登録どおり）。評価 v5 がエージェントの配線の失敗（attempted が極端に少ない、例外で停止）を示した場合は、v8 を出さず v6 の複製にする。
+- うまくいかなかったこと: 実行中のカーネルのログが fetch_log.py で取れない（0 バイト）。loop.md の「10 分後に `tasks=120` を確かめる」は、RUNNING が数分以上続くこと（minimal なら約 1 分で COMPLETE）で代用する。
