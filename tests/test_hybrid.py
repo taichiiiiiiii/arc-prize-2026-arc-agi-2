@@ -434,6 +434,25 @@ def test_minimal_save_mode_skips_everything(tmp_path, monkeypatch):
     assert called == {}
 
 
+def test_minimal_save_mode_does_not_skip_agent_eval(tmp_path, monkeypatch):
+    work = tmp_path / "w"
+    work.mkdir()
+    (work / "start_epoch.txt").write_text("0")
+    monkeypatch.setattr(hybrid, "WORK", work)
+    monkeypatch.delenv("KAGGLE_IS_COMPETITION_RERUN", raising=False)
+
+    class Reached(Exception):
+        pass
+
+    def stop(*a, **k):
+        raise Reached
+
+    monkeypatch.setattr(hybrid, "challenges_path", stop)
+    import pytest
+    with pytest.raises(Reached):                 # went past the minimal early return
+        hybrid.main({"save_mode": "minimal", "agent_eval_h": 2.0})
+
+
 def test_direct_plan_skips_confident_and_sizes_cap():
     conf = {"a": {0: 0.9}, "b": {0: 0.2}, "c": {0: 0.1, 1: 0.95}}
     cfg = {"direct_tok_per_s": 100, "direct_min_tokens": 1000, "direct_max_tokens": 50000}
