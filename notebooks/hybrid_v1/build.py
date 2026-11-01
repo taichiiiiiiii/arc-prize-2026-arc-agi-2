@@ -34,8 +34,8 @@ CONFIG = {
         {"args": REASON},
         {"args": []},
     ],
-    "max_model_len": 40960,  # v8: back to the v6 REPL setting (direct needs 131072 / 16 seqs)
-    "max_num_seqs": 32,
+    "max_model_len": 131072,  # direct needs long reasoning (v7, v9)
+    "max_num_seqs": 16,
     "server_start_s": 1500,
     "nvarc_hours": 10.5,
     "agent_reserve_h": 1.0,   # S2 (NVARC 7h) 24.44 < S1 (NVARC-only) 27.36: NVARC first, agent gets leftovers
@@ -61,9 +61,9 @@ CONFIG = {
     "tok_per_s": 800, "min_cap": 15000, "max_cap": 50000,
     # direct-answer mode (agent_mode "direct"): long xhigh reasoning, grids written by the model.
     # Needs max_model_len 131072 and max_num_seqs ~16 (madarshbb direct-b98k-c16 settings).
-    # v8: "repl". direct in the leftover window scored 2/120 on eval (cap ~20k tokens/sample),
-    # below REPL 6/120; REPL only overrides NVARC with train-verified answers.
-    "agent_mode": "repl",
+    # v8 used "repl": shallow direct (cap ~20k tokens/sample) scored 2/120 on eval.
+    # v9: back to "direct", but deep (see direct_min_tokens): 9/24 on eval at ~100k tokens (#24).
+    "agent_mode": "direct",
     # "minimal": the save run skips everything (about a minute of GPU quota); "smoke" runs the
     # short evaluation smoke test (about 2 h of quota).
     "save_mode": "minimal",
@@ -72,7 +72,9 @@ CONFIG = {
     "direct_template_kwargs": {"reasoning_effort": "xhigh"}, "rescue_tokens": 8192,
     # per-sample cap = direct_tok_per_s * time left / tasks to do, clamped to [min, max];
     # tasks with NVARC conf >= direct_skip_conf get no direct samples.
-    "direct_tok_per_s": 350, "direct_min_tokens": 16384, "direct_skip_conf": 0.75,
+    # v9 (#28): min 98304, so the leftover window solves as many tasks as fit at full depth
+    # instead of spreading ~20k tokens over every task (shallow direct: 2/120, deep: 9/24).
+    "direct_tok_per_s": 350, "direct_min_tokens": 98304, "direct_skip_conf": 0.75,
     # save-run smoke test on evaluation tasks
     "smoke_tasks": ["e8686506", "20270e3b", "28a6681f", "dbff022c",
                     "7b5033c1", "78332cb0", "36a08778", "aa4ec2a5"],

@@ -462,3 +462,19 @@ def test_direct_plan_skips_confident_and_sizes_cap():
     assert todo == ["a", "b", "c"] and cap == 20000        # no NVARC: every task
     _, cap = hybrid.direct_plan(cfg, ["a", "b", "c"], conf.get, 1, True)
     assert cap == 1000                                     # clamped to the minimum
+
+
+def test_build_config_v9_runs_direct_deep():
+    import importlib.util
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[1] / "notebooks" / "hybrid_v1" / "build.py"
+    spec = importlib.util.spec_from_file_location("hybrid_build", path)
+    build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build)
+    cfg = build.CONFIG
+    assert cfg["agent_mode"] == "direct" and cfg["save_mode"] == "minimal"
+    assert cfg["max_model_len"] == 131072 and cfg["max_num_seqs"] == 16
+    conf = {f"t{i}": {0: 0.1} for i in range(120)}
+    # ~2.5 h left over 120 low-confidence tasks: the cap stays deep instead of ~26k tokens
+    todo, cap = hybrid.direct_plan(cfg, list(conf), conf.get, 2.5 * 3600, True)
+    assert len(todo) == 120 and cap == 98304
