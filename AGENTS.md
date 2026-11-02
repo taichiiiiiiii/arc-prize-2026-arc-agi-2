@@ -5,15 +5,15 @@
 ## 境界
 
 - コンペデータ (`data/`) はコミット・公開・再配布しない（ルール 2.4.b）。
-- **リポジトリは最終的に public にする**（オーナー指示）。コンペ期間中に外部へ公開すると、Kaggle の forum か notebook でも全参加者に共有する義務が生じる（Rules 6.a/b）。そのため、public にするのは締め切り（2026-11-02 23:59 UTC）の後にする。手順は `docs/publication.md`。それまでも、**いつでも公開できる状態を保つ**:
+- **このリポジトリは公開を前提にする**。コンペ期間中に外部へ公開すると、Kaggle の forum か notebook でも全参加者に共有する義務が生じる（Rules 6.a/b）。そのため、public にするのは締め切り（2026-11-02 23:59 UTC）の後にする。手順は `docs/publication.md`。それまでも、**いつでも公開できる状態を保つ**:
   - 追跡するファイルに、個人の絶対パス（`/Users/...`、`~/.hermes/...`）、ユーザー名に依存するパス、認証情報、トークン、コンペデータ（タスクのグリッドそのもの）を書かない。場所は環境変数（`ARC2_SCRATCH`、`ARC2_MLX_DIR`、`KAGGLE_PY`）か、リポジトリからの相対パス（`work/` は gitignore）にする。
   - 他者のコードを取り込むときは、出典とライセンスを `NOTICE` とファイル先頭の docstring に書く（Kaggle の公開ノートブックは Apache 2.0）。
   - コード・コメント・コミットメッセージは英語。README は英語の概要と日本語の詳細を並べる。
 - `~/.kaggle/` の認証情報は読まない・表示しない・送信しない。
 - `kaggle kernels push` と `kaggle competitions submit` は、その操作ごとにユーザーの明示的な承認を得てから親エージェントだけが行う。**提出は 1 日 1 回まで**なので、同じ日に 2 回目は送らない。
-- 読み取り専用の Kaggle API（files / submissions / leaderboard / kernels list・pull・status・output / topics）は承認なしで使ってよい。認証エラーが出たら `kaggle auth login`（ブラウザの OAuth）を実行してよい（オーナーが 2026-10-30 に許可）。完了しなければユーザーへ報告する。
+- 読み取り専用の Kaggle API（files / submissions / leaderboard / kernels list・pull・status・output / topics）は承認なしで使ってよい。認証エラーが出たら `kaggle auth login`（ブラウザの OAuth）で再認証する。
 - 提出ノートブックは private にし、インターネットを無効にする。外部データとモデルは、無料で公開されていてオープンソースライセンスのものに限る（入賞時は CC BY 4.0 で公開する義務がある）。
-- このマシン (M4 Pro / 48 GB) はユーザーの Docker や他の学習ジョブと共有している。重い処理の前に `memory_pressure` を確認し、他プロジェクトのプロセスには触れない。
+- ローカルで重い処理（MLX の評価など）を回すときは、同じマシンの他のジョブを止めない。事前に空きメモリを確認する（macOS では `memory_pressure`）。
 
 ## Git
 
