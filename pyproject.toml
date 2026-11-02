@@ -1,7 +1,9 @@
 [project]
 name = "arc2"
 version = "0.1.0"
-description = "ARC Prize 2026 - ARC-AGI-2 (Kaggle) solution workspace"
+description = "ARC Prize 2026 - ARC-AGI-2 (Kaggle): NVARC test-time training + Qwen3.8-27B direct/REPL hybrid"
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = ["numpy>=1.26"]
 
