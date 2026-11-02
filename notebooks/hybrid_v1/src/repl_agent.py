@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebooks by madarshbb (Apache 2.0), modelled on Tufa Labs' Duck
+# harness. Modified for this repository; see NOTICE.
 """REPL tool agent for ARC-AGI-2 tasks, modelled on the Tufa Labs duck harness.
 
 The model gets two tools:

@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebooks by madarshbb (Apache 2.0), modelled on Tufa Labs' Duck
+# harness. Modified for this repository; see NOTICE.
 """The `python` tool: run an exploratory snippet with the task preloaded.
 
 Each call is a fresh subprocess (nothing persists between calls, as in the
