@@ -183,7 +183,8 @@ def build(out: Path, kernel_id: str):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description="Build the hybrid submission (or agent-eval) notebook. "
+                                 "Requires $KAGGLE_USERNAME or --id.")
     ap.add_argument("--out", required=True)
     ap.add_argument("--id", default=None,
                     help="Kaggle kernel id <user>/<slug> (default: $KAGGLE_USERNAME/arc2-hybrid-v1)")

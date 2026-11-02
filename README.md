@@ -7,8 +7,10 @@ that runs inside the competition limits (4× NVIDIA L4, 12 h, no internet). It c
 approaches and merges their answers per test output. The repository also keeps the full record of
 how the solution evolved: every run, each pre-registered decision rule, the scores, and the post-mortem.
 
-**Best Public LB: 30.56.** The medal zone was about 33 and first place was 88.06. This is an honest
-record of a run that did not beat its baseline, written up so the lessons can be reused.
+**Best Public LB: 30.56.** The medal zone was about 33 and first place was 88.06. No change moved
+the score outside the run-to-run noise (about 3 points) of our NVARC-first baseline, and nothing
+reached the 33.89 shown by the public NVARC notebook we started from. This is an honest record of
+that, written up so the lessons can be reused.
 
 ## Approach
 
@@ -41,10 +43,12 @@ Public LB scores. The same code scored 30.56 and 28.06 on two runs, so differenc
 | v8 (`sub-v8`) | v6 + forced-submit fixes | 29.72 |
 | v9 (`sub-v9`) | v6 + deep direct answers (~100k tokens/sample) | pending |
 
-On a fixed 24-task evaluation subset, deep direct answers solved 9/24 tasks (37.5%). NVARC alone
-scores about 28–30%. The final configuration, however, gave the 27B model only the time NVARC
-left over. The [write-up](docs/writeup.md) explains why the score stayed flat and what we would
-change.
+On a fixed 24-task evaluation subset, deep direct answers solved 9/24 tasks (37.5%). For
+comparison, NVARC alone scored 27.36 on the Public LB (S1) and the NVARC-first hybrids scored
+28–31. These are different task sets, so the comparison is only indicative, and evaluation tasks
+may overlap with the model's training data. The final configuration, however, gave the 27B model
+only the time NVARC left over. The [write-up](docs/writeup.md) explains why the score stayed flat
+and what we would change.
 
 ## Repository layout
 
@@ -90,6 +94,9 @@ uv run python scripts/evaluate.py path/to/submission.json --split evaluation
 `save_mode="minimal"` writes a valid fallback submission and exits in about a minute. The full
 pipeline runs only in the competition rerun. The notebook attaches public Kaggle models and
 datasets; they are listed in [NOTICE](NOTICE).
+
+`scripts/fetch_log.py` and `scripts/watch_submit_hybrid.sh` call the Kaggle API, so run them
+with the Python that has the `kaggle` package installed (the one the `kaggle` CLI uses), not with `uv run`.
 
 For a cheap local comparison of agent modes, `scripts/local_eval.py` runs the agent against a
 small Qwen served by `mlx_lm.server` on Apple Silicon. Set `ARC2_MLX_DIR` and `ARC2_SCRATCH`;

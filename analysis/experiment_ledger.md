@@ -7,7 +7,7 @@
 
 ## 2026-10-25 調査と方針
 - 詳細は [reports/research_2026-10-25.md](reports/research_2026-10-25.md)。公開ノートブックの最高は 33.89（NVARC 4B TTT）。上位は Qwen3.8-27B の REPL エージェントが主流と推測。本線は NVARC と Qwen3.8-27B エージェントの組み合わせで、Public 45 以上を目標にする。
-- S1: `taichiiiii/arc2-frontier-copy-3389` の v1 を push した（ユーザー承認済み）。中身は `koushikrudra/failed-in-aimo` の V1 で、ipynb は cmp で一致することを確認済み。is_private=True。完了後に自動で提出し、スコアを監視する（`scripts/watch_frontier_copy.sh`）。期待値は 33.89 付近（銀ラインの近く）。
+- S1: `taichiiiii/arc2-frontier-copy-3389` の v1 を push した（ユーザー承認済み）。中身は `koushikrudra/failed-in-aimo` の V1 で、ipynb は cmp で一致することを確認済み。is_private=True。完了後に自動で提出し、スコアを監視する（S1 専用の監視スクリプト。その後 #40 で削除）。期待値は 33.89 付近（銀ラインの近く）。
 - S1 v1 は保存時の実行で失敗した。原因は Kaggle Models のマウント先が `/kaggle/input/models/sorokin/...` に変わっていたことで、NVARC がモデルを見つけられなかった。**今の公開フォークも、パスを直さないと同じ理由で落ちる可能性がある。** v2 ではモデルのパスを 1 行だけ直して push した（diff は 1 行）。完了したら自動で提出する。
 - hybrid_v1 の実装は `notebooks/hybrid_v1/` にある。NVARC を 5 時間回したあと、Qwen3.8-27B FP8 の REPL エージェントを vLLM で動かす（vLLM は同梱の CPython 3.12 で起動）。統合ルール: エージェントが検証済みの答えを最優先にし、次に NVARC の上位、最後にエージェントの未検証答えを使う。テスト 13 件が通過（統合ロジック、偽 LLM でのエージェントループ、NVARC デコード）。Kaggle Dataset の作成と、動作確認のための push はユーザー承認待ち。
 - S1 v2 を 2026-10-24 19:11 UTC に提出（ref 57604463、PENDING）。保存時の実行（evaluation 4 タスク）の Reload score は 2.5。
@@ -235,7 +235,7 @@
 - 最終 2 本: Public 最良の枠は暫定 v6（30.56）のまま（v7 は 32.3 未満で差し替えない）。系統違いの枠は v8 / v9 のスコアを見て 11/2 に決める。
 - うまくいかなかったこと: なし。
 
-## 2026-11-01 14:30 UTC 最終 2 本の選び方（事前登録、#��v8・v9 のスコアが出る前）
+## 2026-11-01 14:30 UTC 最終 2 本の選び方（事前登録、#31。v8・v9 のスコアが出る前）
 候補と現状: v6（30.56、複製 28.06、平均 29.31）、v7（浅い direct、30.14）、v8（REPL + 修正、PENDING）、v9（深い direct、11/2 00:03 UTC に提出予定）。系統は 2 つ: **REPL 系**（v6・v8。NVARC を置き換えるのは verified 解だけ）と **direct 系**（v7・v9。低確信度タスクで NVARC top2 を direct に置き換える）。
 - **枠 1（REPL 系の最良）**: 原則 v6（57667359）。v8 の Public が v6 平均 + 3 = **32.3 以上**なら v8 に替える。
 - **枠 2（direct 系の最良）**: v9 の Public が **v7 − 3 = 27.1 以上**なら v9（深い direct は評価で 9/24、浅い direct は 2/120 で、仕組み上 v9 が上回るはず。Public はノイズ幅の中で下がっていなければよい）。27.1 未満なら v7（57822732）。**11/2 23:00 UTC までに v9 が採点されなければ v7**（採点されていない 1 本には賭けない）。

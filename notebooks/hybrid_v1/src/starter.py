@@ -1,3 +1,5 @@
+# Derived from NVARC (I. Sorokin, J.-F. Puget; https://github.com/1ytic/NVARC) via the Kaggle
+# notebook koushikrudra/failed-in-aimo (Apache 2.0). Modified for this repository; see NOTICE.
 """NVARC launcher (from koushikrudra/failed-in-aimo, Apache 2.0), task list taken from a file.
 
     python starter.py --end-time <epoch> --keys keys.json --challenges <path>
