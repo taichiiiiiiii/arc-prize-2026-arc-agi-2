@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebooks by madarshbb (Apache 2.0), modelled on Tufa Labs' Duck
+# harness. Modified for this repository; see NOTICE.
 """Direct-answer mode: Qwen3.8 reasons at length (reasoning_effort xhigh) and writes the test
 output grid(s) itself, no tools. Several samples per task; the hybrid merge picks two answers.
 
