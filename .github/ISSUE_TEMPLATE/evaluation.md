@@ -13,7 +13,7 @@ labels: [arc-loop, evaluation, enhancement]
 ## 条件
 - タスク: <!-- 全 120 / 固定 seed の部分集合 N -->
 - 予算: <!-- 時間、1 サンプルのトークン数（方式が前提とする予算か） -->
-- ビルド: `build.py --id taichiiiii/arc2-agent-eval --set agent_eval_h=... --set ...`
+- ビルド: `build.py --id $KAGGLE_USERNAME/arc2-agent-eval --set agent_eval_h=... --set ...`
 
 ## 検出力と判定（事前登録）
 <!-- 期待効果が 2σ ≈ 2√(n·p·(1−p)) を超えるか。結果がどうなれば判断が変わるか -->
