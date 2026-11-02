@@ -1,3 +1,5 @@
+# Derived from NVARC (I. Sorokin, J.-F. Puget; https://github.com/1ytic/NVARC) via the Kaggle
+# notebook koushikrudra/failed-in-aimo (Apache 2.0). Modified for this repository; see NOTICE.
 import json
 import numpy as np
 from transformers import AutoTokenizer

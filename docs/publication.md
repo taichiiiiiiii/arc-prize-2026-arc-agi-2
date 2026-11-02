@@ -26,6 +26,6 @@
 1. この監査を develop の最新でやり直す（上の表のコマンド）。差分があれば、Issue と PR で直す。
 2. README の結果欄を、最終の Public / Private スコアに更新する（PR）。
 3. `develop` を `main` へ PR でマージする（`--merge`）。
-4. `gh repo edit --visibility public --accept-visibility-change-consequences`（オーナーの承認を得てから）。
+4. `gh repo edit --visibility public --accept-visibility-change-consequences`。
 5. public になると GitHub Actions が無料になるので、`.github/workflows/tests.yml` の `on:` を push / pull_request に戻す（#4 を閉じる）。
 6. 入賞圏なら、Kaggle の Solution Writeup にリポジトリと notebook のリンクを付ける。

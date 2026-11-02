@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebook madarshbb/arc-qwen-3-8-27b-agent (Apache 2.0), modelled on
+# Tufa Labs' Duck harness. Modified for this repository; see NOTICE.
 """Batched program-synthesis agent for ARC tasks.
 
 Every task gets K independent attempts (conversations). Each ROUND sends every

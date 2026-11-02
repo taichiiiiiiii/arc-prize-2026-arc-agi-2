@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebook madarshbb/arc-qwen-3-8-27b-agent (Apache 2.0), modelled on
+# Tufa Labs' Duck harness. Modified for this repository; see NOTICE.
 """LLM backends. The agent only needs one call: complete a batch of chats.
 
 `VLLMBackend` runs offline on the Kaggle GPUs. `MockBackend` replays scripted
