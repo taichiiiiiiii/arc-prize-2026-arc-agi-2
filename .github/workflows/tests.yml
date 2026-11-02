@@ -1,0 +1,20 @@
+name: tests
+
+# Actions is blocked by account billing (2026-10-29): until that is fixed this runs only on
+# demand, and scripts/ci_local.sh posts the `tests` status instead. To re-enable, restore:
+#   push: {branches: [develop, main]}
+#   pull_request:
+on:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --group dev
+      - run: uv run ruff check .
+      - run: uv run pytest -q
