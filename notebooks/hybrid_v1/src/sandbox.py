@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebook madarshbb/arc-qwen-3-8-27b-agent (Apache 2.0), modelled on
+# Tufa Labs' Duck harness. Modified for this repository; see NOTICE.
 """Run model-written `transform` programs in isolated subprocesses.
 
 Each job is (code, inputs). The program runs in a fresh interpreter with a

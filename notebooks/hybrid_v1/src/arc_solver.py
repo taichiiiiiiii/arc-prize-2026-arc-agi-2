@@ -1,3 +1,5 @@
+# Derived from NVARC (I. Sorokin, J.-F. Puget; https://github.com/1ytic/NVARC) via the Kaggle
+# notebook koushikrudra/failed-in-aimo (Apache 2.0). Modified for this repository; see NOTICE.
 from unsloth import FastLanguageModel, UnslothTrainingArguments, UnslothTrainer
 from arc_loader import ArcDataset, QwenFormatter
 

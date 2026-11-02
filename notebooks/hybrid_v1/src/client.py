@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebook madarshbb/arc-qwen-3-8-27b-agent (Apache 2.0), modelled on
+# Tufa Labs' Duck harness. Modified for this repository; see NOTICE.
 """Minimal OpenAI-compatible chat client for a local vLLM server (stdlib only).
 
 Returns a normalised dict: content, reasoning, tool_calls [{id, name, arguments}],

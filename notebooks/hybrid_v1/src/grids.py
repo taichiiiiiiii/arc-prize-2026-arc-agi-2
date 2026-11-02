@@ -1,3 +1,5 @@
+# Derived from the Kaggle notebook madarshbb/arc-qwen-3-8-27b-agent (Apache 2.0), modelled on
+# Tufa Labs' Duck harness. Modified for this repository; see NOTICE.
 """Grid <-> text, task prompts and failure feedback for the program-synthesis agent.
 
 Grids are shown as rows of digits with no separators, the same layout NVARC's
