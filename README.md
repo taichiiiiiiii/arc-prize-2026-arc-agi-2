@@ -18,7 +18,22 @@ It combines two public approaches and merges their answers per test output:
    NVARC's top-2 when NVARC is confident, otherwise the Qwen answer. A REPL program that
    reproduces every training pair goes first.
 
-Public LB so far: 27.36 (NVARC copy) → 24.44 (NVARC 7 h + REPL) → **30.56** (NVARC 10.5 h + REPL).
+Submissions (Public LB; same-code noise is about ±2.5 points):
+
+| Version | Configuration | Public |
+|---|---|---|
+| S1 | public NVARC notebook copy | 27.36 |
+| S2 | NVARC 7 h (shortest first) + REPL agent | 24.44 |
+| v6 | NVARC 10.5 h + REPL agent (two runs of the same code) | **30.56** / 28.06 |
+| v7 | v6 + shallow direct answers (~20k tokens/sample) | 30.14 |
+| v8 | v6 + forced-submit fixes | 29.72 |
+| v9 | v6 + deep direct answers (~100k tokens/sample) | pending |
+
+Nothing beat the starting NVARC baseline by more than the noise. The post-mortem in the ledger
+(2026-11-02) attributes this to giving the 27B model only leftover time (deep direct solved 9/24
+evaluation tasks vs NVARC's ~30%), finding the direct-answer mode late, and an underpowered
+evaluation loop. The redesigned loop is in [analysis/reports/loop.md](analysis/reports/loop.md)
+and the hypothesis backlog in [analysis/hypotheses.md](analysis/hypotheses.md).
 The experiment ledger (Japanese) records every run, decision rule and result:
 [analysis/experiment_ledger.md](analysis/experiment_ledger.md).
 
@@ -71,7 +86,7 @@ notebooks/hybrid_v1/   提出ノートブックの生成器（build.py）とモ�
   src/arc_*.py         NVARC（TTT + DFS）
 notebooks/frontier_copy_3389/  公開 NVARC ノートブックのコピー（S1）
 src/arc2/              データ読み込み・評価指標・提出形式
-scripts/               評価、ローカル評価、Kaggle の監視・ログ取得、ローカル CI
+scripts/               評価、ローカル評価、Kaggle の提出監視・ログ取得、ローカル CI
 tests/                 統合・エージェント・各モードのテスト（偽 LLM、GPU 不要）
 analysis/              実験台帳・調査・振り返り・ループ手順
 docs/                  コンペ概要・公開手順
