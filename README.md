@@ -43,10 +43,12 @@ Public LB scores. The same code scored 30.56 and 28.06 on two runs, so differenc
 | v8 (`sub-v8`) | v6 + forced-submit fixes | 29.72 |
 | v9 (`sub-v9`) | v6 + deep direct answers (~100k tokens/sample) | pending |
 
-On a fixed 24-task evaluation subset, deep direct answers solved 9/24 tasks (37.5%). NVARC alone
-scores about 28–30%. The final configuration, however, gave the 27B model only the time NVARC
-left over. The [write-up](docs/writeup.md) explains why the score stayed flat and what we would
-change.
+On a fixed 24-task evaluation subset, deep direct answers solved 9/24 tasks (37.5%). For
+comparison, NVARC alone scored 27.36 on the Public LB (S1) and the NVARC-first hybrids scored
+28–31. These are different task sets, so the comparison is only indicative, and evaluation tasks
+may overlap with the model's training data. The final configuration, however, gave the 27B model
+only the time NVARC left over. The [write-up](docs/writeup.md) explains why the score stayed flat
+and what we would change.
 
 ## Repository layout
 
