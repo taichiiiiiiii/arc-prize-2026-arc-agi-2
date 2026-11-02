@@ -7,8 +7,10 @@ that runs inside the competition limits (4× NVIDIA L4, 12 h, no internet). It c
 approaches and merges their answers per test output. The repository also keeps the full record of
 how the solution evolved: every run, each pre-registered decision rule, the scores, and the post-mortem.
 
-**Best Public LB: 30.56.** The medal zone was about 33 and first place was 88.06. This is an honest
-record of a run that did not beat its baseline, written up so the lessons can be reused.
+**Best Public LB: 30.56.** The medal zone was about 33 and first place was 88.06. No change moved
+the score outside the run-to-run noise (about 3 points) of our NVARC-first baseline, and nothing
+reached the 33.89 shown by the public NVARC notebook we started from. This is an honest record of
+that, written up so the lessons can be reused.
 
 ## Approach
 
