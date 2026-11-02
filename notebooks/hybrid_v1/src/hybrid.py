@@ -1,3 +1,5 @@
+# Written for this repository (Apache 2.0). Orchestrates NVARC and the Qwen3.8-27B agent, whose
+# code derives from third-party notebooks; see NOTICE.
 """Hybrid ARC-AGI-2 run: NVARC (Qwen3-4B TTT) first, then a Qwen3.8-27B REPL agent, merged.
 
     python hybrid.py '<json config>'
