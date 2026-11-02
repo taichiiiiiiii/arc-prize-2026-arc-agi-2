@@ -40,4 +40,4 @@
 
 ## 締め切り後（2026-11-02 23:59 UTC より後）
 - Kaggle で Late Submission ができる場合は、提出枠を使って、バックログの上位から測る（順位は付かないが、Public と Private の両方が見られる）。できない場合は、評価カーネルで天井と時間配分を測り、結果を ledger と README に残す（公開用の記録と、次の大会での判断材料にする）。
-- リポジトリの public 化は、オーナーの承認を得てから行う（`docs/publication.md`）。
+- リポジトリの公開手順は `docs/publication.md`。
