@@ -21,7 +21,7 @@
 - 作業ブランチで作業し、main と develop へ直接 push しない。force-push しない。
 
 ## Git 運用（1 つの作業 = 1 つの Issue = 1 つのブランチ）
-1. **Issue を立てる**: 日本語で書く。ラベルは `arc-loop` と種類（`bug` / `enhancement`）。オーナーの判断が要るものには `needs-decision` を付ける。追跡用の親は #1。
+1. **Issue を立てる**: 日本語で書く（テンプレートは `.github/ISSUE_TEMPLATE/`）。ラベルは `arc-loop` と種類（`bug` / `enhancement` / `documentation`）。必要に応じて `submission`（Kaggle の提出・push）、`evaluation`（評価カーネル・ローカル評価）、`hypothesis`（`analysis/hypotheses.md` の Hn）を付ける。オーナーの判断が要るものには `needs-decision` を付ける。追跡用の親は #1。
 2. **ブランチを切る**: 最新の `origin/develop` から `<種類>/<Issue番号>-<内容>` で切る（例: `enhancement/5-git-workflow`）。
 3. **コミットする**: 1 つの論理単位ごとにコミットし、本文に `Refs #番号` を書く。メッセージは `feat(...)` / `fix(...)` / `docs(...)` / `ci(...)` の形。
 4. **PR を作る**: `gh pr create --base develop`。本文に、変更内容、数値（テスト件数、評価の値など）、`Fixes #番号` を書く。
