@@ -11,4 +11,6 @@ The files in this directory are written in Japanese. For an English summary, see
 | [reports/research_2026-10-25.md](reports/research_2026-10-25.md) | 技術調査（LB の構造、公開ノートブック、NVARC、27B direct） |
 | [reports/retrospective_2026-10-28.md](reports/retrospective_2026-10-28.md) | 中間の振り返り |
 
+これらは作業中にそのまま書いた生の記録で、後から整えていない。運用の細部（監視スクリプト、定期実行のスケジューラ、ローカルの作業用ディレクトリなど）もそのまま残している。
+
 台帳には、自動の改善ループ（エージェントが定期実行）の記録と、親セッション（人の指示を受けた作業）の記録が混ざっている。見出しの「ループ」は自動実行、「親セッション」は対話中の作業を指す。

@@ -91,6 +91,9 @@ uv run python scripts/evaluate.py path/to/submission.json --split evaluation
 pipeline runs only in the competition rerun. The notebook attaches public Kaggle models and
 datasets; they are listed in [NOTICE](NOTICE).
 
+`scripts/fetch_log.py` and `scripts/watch_submit_hybrid.sh` call the Kaggle API, so run them
+with the Python that has the `kaggle` package installed (the one the `kaggle` CLI uses), not with `uv run`.
+
 For a cheap local comparison of agent modes, `scripts/local_eval.py` runs the agent against a
 small Qwen served by `mlx_lm.server` on Apple Silicon. Set `ARC2_MLX_DIR` and `ARC2_SCRATCH`;
 see the script header.
