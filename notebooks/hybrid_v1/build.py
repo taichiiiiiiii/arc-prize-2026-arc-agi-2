@@ -1,9 +1,12 @@
 """Build the hybrid kernel (ipynb + kernel-metadata.json) from src/.
 
-    uv run python notebooks/hybrid_v1/build.py --out <dir> [--id taichiiiii/arc2-hybrid-v1]
+    uv run python notebooks/hybrid_v1/build.py --out <dir> [--id <user>/arc2-hybrid-v1] [--set KEY=JSON ...]
+
+The kernel id defaults to $KAGGLE_USERNAME/arc2-hybrid-v1.
 """
 import argparse
 import json
+import os
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -132,6 +135,13 @@ def cell(src, kind="code"):
     return c
 
 
+def default_kernel_id(slug="arc2-hybrid-v1"):
+    user = os.environ.get("KAGGLE_USERNAME")
+    if not user:
+        raise SystemExit("set KAGGLE_USERNAME or pass --id <user>/<slug>")
+    return f"{user}/{slug}"
+
+
 def build(out: Path, kernel_id: str):
     cells = [cell(HEAD, "markdown"), cell(FALLBACK)]
     for name in FILES:
@@ -175,7 +185,8 @@ def build(out: Path, kernel_id: str):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
-    ap.add_argument("--id", default="taichiiiii/arc2-hybrid-v1")
+    ap.add_argument("--id", default=None,
+                    help="Kaggle kernel id <user>/<slug> (default: $KAGGLE_USERNAME/arc2-hybrid-v1)")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=JSON",
                     help="override a CONFIG entry, e.g. --set agent_eval_h=2.0")
     a = ap.parse_args()
@@ -183,4 +194,5 @@ if __name__ == "__main__":
         k, v = kv.split("=", 1)
         assert k in CONFIG or k in ("agent_eval_h", "agent_eval_tasks", "skip_agent"), k
         CONFIG[k] = json.loads(v)
-    print(build(Path(a.out), a.id))
+    kid = a.id or default_kernel_id()
+    print(build(Path(a.out), kid))
