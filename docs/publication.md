@@ -29,3 +29,7 @@
 4. `gh repo edit --visibility public --accept-visibility-change-consequences`。
 5. public になると GitHub Actions が無料になるので、`.github/workflows/tests.yml` の `on:` を push / pull_request に戻す（#4 を閉じる）。
 6. 入賞圏なら、Kaggle の Solution Writeup にリポジトリと notebook のリンクを付ける。
+
+## 公開の記録（2026-11-03）
+- 最終レビュー（外部レビュー担当、読み取り専用）で指摘ゼロを確認してから、リポジトリを public にした。
+- GitHub Actions の tests を push / pull_request で自動実行に戻した（#��。
