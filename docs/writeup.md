@@ -46,7 +46,11 @@ Engineering details that were worth getting right:
 | v6 | NVARC 10.5 h + REPL agent | 30.56, and 28.06 on a second run of the same code |
 | v7 | + shallow direct (~20k tokens/sample) on low-confidence tasks | 30.14 |
 | v8 | REPL + forced-submit fixes | 29.72 |
-| v9 | + deep direct (~100k tokens/sample) | pending |
+| v9 | + deep direct (~100k tokens/sample) | 30.56 |
+
+v9 put deep direct answers into the ~2.5 h left after NVARC and tied v6, which is consistent
+with the analysis in section 4: at the current generation speed, deep direct and the last hours
+of NVARC earn about the same points per hour.
 
 Running the same code twice gave 30.56 and 28.06, so any Public difference under about 3 points is noise.
 
