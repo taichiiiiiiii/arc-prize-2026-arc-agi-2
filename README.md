@@ -7,7 +7,8 @@ that runs inside the competition limits (4× NVIDIA L4, 12 h, no internet). It c
 approaches and merges their answers per test output. The repository also keeps the full record of
 how the solution evolved: every run, each pre-registered decision rule, the scores, and the post-mortem.
 
-**Best Public LB: 30.56.** The medal zone was about 33 and first place was 88.06. No change moved
+**Best Public LB: 30.56** (v6 and v9; final rank on the Public LB 1298 / 3626 teams before the private
+results). The medal zone was about 33 and first place was 88.06. No change moved
 the score outside the run-to-run noise (about 3 points) of our NVARC-first baseline, and nothing
 reached the 33.89 shown by the public NVARC notebook we started from. This is an honest record of
 that, written up so the lessons can be reused.
@@ -41,7 +42,7 @@ Public LB scores. The same code scored 30.56 and 28.06 on two runs, so differenc
 | v6 | NVARC 10.5 h + REPL agent (two runs of the same code) | **30.56** / 28.06 |
 | v7 (`sub-v7`) | v6 + shallow direct answers (~20k tokens/sample) | 30.14 |
 | v8 (`sub-v8`) | v6 + forced-submit fixes | 29.72 |
-| v9 (`sub-v9`) | v6 + deep direct answers (~100k tokens/sample) | pending |
+| v9 (`sub-v9`) | v6 + deep direct answers (~100k tokens/sample) | **30.56** |
 
 On a fixed 24-task evaluation subset, deep direct answers solved 9/24 tasks (37.5%). For
 comparison, NVARC alone scored 27.36 on the Public LB (S1) and the NVARC-first hybrids scored
