@@ -12,7 +12,7 @@
 | グリッドのデータが埋め込まれていない | 履歴の追加行から、10 個以上の数字が並ぶ `[[...]]` を探した | 0 件（テストは合成した 1×2 程度のタスクだけ） |
 | 認証情報 | 履歴全体から `KGAT_`、`ghp_`、`github_pat_`、`sk-…`、`hf_…`、`AKIA…`、秘密鍵ヘッダを探した | 0 件。`kaggle.json`、`.kaggle/`、`.env` は gitignore |
 | 個人の絶対パス（HEAD） | `git grep '/Users/\|\.hermes'` | 0 件（AGENTS.md のルールの説明文を除く）。スクリプトは `ARC2_SCRATCH`、`ARC2_MLX_DIR`、`KAGGLE_PY`、相対パスを使う |
-| 個人の絶対パス（履歴） | 過去のコミットの scripts に `/Users/<user>/...` が 3 か所ある | 秘密情報ではない（ユーザー名だけが分かる）。履歴を書き換えて force-push はしない（AGENTS.md） |
+| 個人の絶対パス・個人のメール（履歴） | `git log --all -p` と author/committer を確認 | 2026-11-03 に `git filter-repo` で履歴を書き換えた（#58）。マージコミット 9 件の個人メールを noreply アドレスに、ローカルのユーザー名を含むパスを `/Users/<user>` に置き換えた。書き換え後は 0 件。古い SHA と新しい SHA の対応は `docs/commit-map.tsv` |
 | 他者のコード | koushikrudra（NVARC）、madarshbb（Qwen エージェント、direct）、Tufa Labs の duck harness | `NOTICE` に出典を書いた。Kaggle の公開ノートブックは Apache 2.0 |
 | モデルの重み・wheel | `*.safetensors`、`*.bin`、`*.gguf`、`kaggle_datasets/` は gitignore | 履歴に 0 件 |
 
