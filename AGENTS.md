@@ -18,7 +18,7 @@
 ## Git
 
 - コミットの前に `uv run ruff check .` と `uv run pytest -q` が通ることを確認する。
-- 作業ブランチで作業し、main と develop へ直接 push しない。force-push しない。
+- 作業ブランチで作業し、main と develop へ直接 push しない。force-push しない。（例外: 2026-11-03 に、公開前のプライバシー対策として、管理者の承認を得て履歴を 1 回書き換えた。#58、`docs/commit-map.tsv`）
 
 ## Git 運用（1 つの作業 = 1 つの Issue = 1 つのブランチ）
 1. **Issue を立てる**: 日本語で書く（テンプレートは `.github/ISSUE_TEMPLATE/`）。ラベルは `arc-loop` と種類（`bug` / `enhancement` / `documentation`）。必要に応じて `submission`（Kaggle の提出・push）、`evaluation`（評価カーネル・ローカル評価）、`hypothesis`（`analysis/hypotheses.md` の Hn）を付ける。リポジトリ管理者の判断が要るものには `needs-decision` を付ける。追跡用の親は #1。
